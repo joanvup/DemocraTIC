@@ -205,16 +205,21 @@ export class VotingService {
       };
     });
 
-    // Agregar Voto en Blanco
-    candidateResults.push({
-      candidate_id: null,
-      candidate_name: 'VOTO EN BLANCO',
-      list_number: null,
-      photo_url: null,
-      votes_count: blankVotes,
-      percentage: totalVotes > 0 ? Number(((blankVotes / totalVotes) * 100).toFixed(1)) : 0,
-      is_blank: true
-    });
+    const election = await this.electionRepo.findById(electionId);
+    const allowBlank = election?.allow_blank_vote === 1;
+
+    // Agregar Voto en Blanco solo si está habilitado o si hay votos registrados (caso borde)
+    if (allowBlank || blankVotes > 0) {
+      candidateResults.push({
+        candidate_id: null,
+        candidate_name: 'VOTO EN BLANCO',
+        list_number: null,
+        photo_url: null,
+        votes_count: blankVotes,
+        percentage: totalVotes > 0 ? Number(((blankVotes / totalVotes) * 100).toFixed(1)) : 0,
+        is_blank: true
+      });
+    }
 
     // Ordenar de mayor a menor votación
     candidateResults.sort((a, b) => b.votes_count - a.votes_count);

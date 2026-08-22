@@ -35,11 +35,6 @@ export function LoginPage({
     }
   };
 
-  const handleQuickLogin = (u: string, p: string) => {
-    setUsername(u);
-    setPassword(p);
-  };
-
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
       <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
@@ -94,29 +89,6 @@ export function LoginPage({
             {loading ? 'Verificando...' : 'Iniciar Sesión'}
           </button>
         </form>
-
-        {/* Acceso Rápido Demo */}
-        <div className="pt-3 border-t border-slate-800 space-y-2 text-center">
-          <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
-            Credenciales de Prueba Rápida
-          </span>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('admin', 'Admin2026!*')}
-              className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-sky-300 font-bold border border-slate-700 transition-colors"
-            >
-              Superadmin
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('monitor', 'Monitor2026!*')}
-              className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-emerald-300 font-bold border border-slate-700 transition-colors"
-            >
-              Monitor de Mesa
-            </button>
-          </div>
-        </div>
 
         <div className="text-center pt-2">
           <button

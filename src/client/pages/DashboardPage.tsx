@@ -16,6 +16,7 @@ import { useSSE } from '../hooks/useSSE.js';
 import { StudentCardModal } from '../components/admin/StudentCardModal.js';
 import { CandidateModal } from '../components/admin/CandidateModal.js';
 import { ElectionModal } from '../components/admin/ElectionModal.js';
+import { ChangePasswordModal } from '../components/admin/ChangePasswordModal.js';
 import { generateActaPDF } from '../utils/pdfReportService.js';
 import {
   BarChart3,
@@ -26,6 +27,7 @@ import {
   FileText,
   Filter,
   History,
+  Key,
   LayoutDashboard,
   LogOut,
   Plus,
@@ -85,6 +87,9 @@ export function DashboardPage({
   // Modales de Elecciones
   const [isNewElectionModalOpen, setIsNewElectionModalOpen] = useState(false);
   const [electionToEdit, setElectionToEdit] = useState<Election | null>(null);
+  
+  // Contraseña
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   const [isNewStudentModalOpen, setIsNewStudentModalOpen] = useState(false);
   const [studentForm, setStudentForm] = useState({
@@ -469,6 +474,14 @@ export function DashboardPage({
             <span className="text-xs font-bold text-white">{user?.full_name}</span>
             <span className="text-[10px] text-sky-400 font-mono">{user?.role}</span>
           </div>
+
+          <button
+            onClick={() => setIsPasswordModalOpen(true)}
+            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+            title="Cambiar Contraseña"
+          >
+            <Key className="w-4 h-4" />
+          </button>
 
           <button
             onClick={logout}
@@ -1439,6 +1452,11 @@ export function DashboardPage({
           </div>
         </div>
       )}
+
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
     </div>
   );
 }

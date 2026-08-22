@@ -71,6 +71,10 @@ export const adminApi = {
   }),
   logout: () => fetchJson<{ success: boolean }>('/api/v1/admin/logout', { method: 'POST' }),
   getMe: () => fetchJson<{ success: boolean; user: User }>('/api/v1/admin/me'),
+  changePassword: (oldPassword: string, newPassword: string) => fetchJson<{ success: boolean; message: string }>('/api/v1/admin/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ oldPassword, newPassword })
+  }),
   
   // Elecciones
   getElections: () => fetchJson<{ success: boolean; elections: Election[] }>('/api/v1/admin/elections'),

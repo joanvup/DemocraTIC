@@ -58,4 +58,21 @@ export class AuthService {
     const salt = await bcrypt.genSalt(10);
     return bcrypt.hash(password, salt);
   }
+
+  async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<boolean> {
+    const user = await this.userRepo.findById(userId);
+    if (!user) return false;
+    
+    // We need to get the user with the hash
+    const userWithHash = await this.userRepo.findByUsername(user.username);
+    if (!userWithHash) return false;
+
+    const isValid = await bcrypt.compare(oldPassword, userWithHash.password_hash);
+    if (!isValid) return false;
+
+    const newHash = await this.hashPassword(newPassword);
+    await this.userRepo.update(userId, { password_hash: newHash });
+    
+    return true;
+  }
 }

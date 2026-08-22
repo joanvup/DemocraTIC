@@ -84,6 +84,39 @@ router.get('/me', requireAuth(), (req: AuthenticatedRequest, res) => {
   });
 });
 
+router.post('/change-password', requireAuth(), async (req: AuthenticatedRequest, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword) {
+      res.status(400).json({ success: false, message: 'La contraseña actual y la nueva contraseña son requeridas.' });
+      return;
+    }
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'No autenticado.' });
+      return;
+    }
+
+    const result = await authService.changePassword(req.user.userId, oldPassword, newPassword);
+    if (!result) {
+      res.status(400).json({ success: false, message: 'La contraseña actual es incorrecta.' });
+      return;
+    }
+
+    await auditRepo.create({
+      user_id: req.user.userId,
+      username: req.user.username,
+      action: 'CHANGE_PASSWORD',
+      details: 'El usuario ha cambiado su contraseña.',
+      ip_address: req.ip || '127.0.0.1'
+    });
+
+    res.json({ success: true, message: 'Contraseña actualizada correctamente.' });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Error al cambiar contraseña';
+    res.status(500).json({ success: false, message: msg });
+  }
+});
+
 /* ==========================================================================
    GESTIÓN DE ELECCIONES
    ========================================================================== */

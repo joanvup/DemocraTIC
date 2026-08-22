@@ -1,15 +1,11 @@
 import cookieParser from 'cookie-parser';
 import express from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { runMigrations } from './src/server/db/migrations.js';
 import { seedDatabase } from './src/server/db/seed.js';
 import adminRoutes from './src/server/routes/adminRoutes.js';
 import sseRoutes from './src/server/routes/sseRoutes.js';
 import votingRoutes from './src/server/routes/votingRoutes.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();

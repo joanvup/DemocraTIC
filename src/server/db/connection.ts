@@ -21,27 +21,31 @@ const isMysql = () => process.env.DATABASE_CLIENT === 'mysql';
 export async function getMysqlConnection() {
   if (pool) return pool;
 
-  const databaseUrl = process.env.DATABASE_URL;
-  
-  if (databaseUrl && databaseUrl.startsWith('mysql://')) {
-    pool = mysql.createPool({
-      uri: databaseUrl,
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0
-    });
+  const config: mysql.PoolOptions = {
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+  };
+
+  // Priorizar variables individuales para evitar errores de parseo de URL
+  // con contraseñas que contienen caracteres especiales (como @, #, etc.)
+  if (process.env.DB_HOST) {
+    config.host = process.env.DB_HOST;
+    config.user = process.env.DB_USER || 'root';
+    config.password = process.env.DB_PASSWORD || '';
+    config.database = process.env.DB_NAME || 'elections';
+    config.port = parseInt(process.env.DB_PORT || '3306', 10);
+  } else if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('mysql://')) {
+    config.uri = process.env.DATABASE_URL;
   } else {
-    pool = mysql.createPool({
-      host: process.env.DB_HOST || 'localhost',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'elections',
-      port: parseInt(process.env.DB_PORT || '3306', 10),
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0
-    });
+    config.host = 'localhost';
+    config.user = 'root';
+    config.password = '';
+    config.database = 'elections';
+    config.port = 3306;
   }
+
+  pool = mysql.createPool(config);
 
   const connection = await pool.getConnection();
   connection.release();
@@ -96,7 +100,6 @@ export async function executeQuery<T = Record<string, unknown>>(
   if (isMysql()) {
     const db = await getMysqlConnection();
     try {
-      // Sustituir $1, $2 por ? en caso de que haya sintaxis posicional (aunque el código usa ?)
       const [rows] = await db.query(sql, params);
       return rows as T[];
     } catch (err) {

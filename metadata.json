@@ -1,0 +1,6 @@
+{
+  "name": "Elecciones Personero Escolar",
+  "description": "Sistema profesional de votación y gestión electoral para personería estudiantil con verificación QR criptográfica, voto secreto y panel administrativo en tiempo real.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

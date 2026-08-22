@@ -24,8 +24,18 @@ export async function getDbConnection(): Promise<Database> {
   const SQL = await initSqlJs();
 
   if (fs.existsSync(DB_FILE_PATH)) {
-    const fileBuffer = fs.readFileSync(DB_FILE_PATH);
-    dbInstance = new SQL.Database(fileBuffer);
+    try {
+      const fileBuffer = fs.readFileSync(DB_FILE_PATH);
+      dbInstance = new SQL.Database(fileBuffer);
+    } catch (err: any) {
+      console.error('Failed to load existing database (might be corrupted):', err.message);
+      // Create backup and initialize new database
+      const backupPath = DB_FILE_PATH + '.corrupt.' + Date.now();
+      fs.renameSync(DB_FILE_PATH, backupPath);
+      console.log(`Corrupted database backed up to ${backupPath}. Creating fresh database.`);
+      dbInstance = new SQL.Database();
+      persistDatabase(dbInstance);
+    }
   } else {
     dbInstance = new SQL.Database();
     persistDatabase(dbInstance);

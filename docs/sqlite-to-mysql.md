@@ -25,19 +25,23 @@ FLUSH PRIVILEGES;
 
 ## 2. Variables de Entorno en Producción
 
-En el archivo `.env` del servidor de producción, cambiar la configuración:
+El sistema detectará automáticamente si debe conectarse a MySQL o usar el fallback de SQLite, dependiendo de las siguientes variables.
+
+En el archivo `.env` del servidor de producción (o en el Panel de Variables de Entorno de Hostinger), debes usar la configuración individual de variables para evitar problemas con contraseñas que contienen caracteres especiales:
 
 ```env
-# Configuración anterior (SQLite):
-# DATABASE_CLIENT=sqlite
-# DATABASE_URL=./data/elections.sqlite
-
-# Nueva configuración (MySQL 8+):
+# Configuración Nueva (MySQL 8+):
 DATABASE_CLIENT=mysql
-DATABASE_URL=mysql://elec_user:TuPasswordSeguro2026!@localhost:3306/elections_school
+DB_HOST=127.0.0.1
+DB_USER=elec_user
+DB_PASSWORD=TuPasswordSeguro2026!
+DB_NAME=elections_school
+DB_PORT=3306
 ```
 
----
+> **NOTA IMPORTANTE PARA HOSTINGER:**
+> *   No uses `DATABASE_URL` si tu contraseña tiene caracteres especiales (como `@`, `#`, etc.), ya que romperá el parseo de la URL y te devolverá el error `TypeError: Invalid URL`. Usa siempre el bloque de variables separadas (`DB_HOST`, `DB_USER`, etc.).
+> *   Si encuentras el error `Access denied for user 'xxx'@'::1'`, **asegúrate de cambiar `DB_HOST=localhost` por `DB_HOST=127.0.0.1`**. Los servidores compartidos suelen forzar las conexiones IPv6 en `localhost` y fallan los permisos locales.
 
 ## 3. Esquema DDL para MySQL 8+
 

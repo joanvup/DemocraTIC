@@ -72,7 +72,7 @@ Sistema integral, seguro y en tiempo real para votación escolar y gestión demo
 * **Frontend:** React 19, Tailwind CSS, Lucide Icons, jsPDF + AutoTable, Canvas Confetti, HTML5 QR Scanner.
 * **Backend:** Node.js, Express, TypeScript (`tsx`), Server-Sent Events (SSE).
 * **Criptografía:** `node:crypto` (HMAC-SHA256, timingSafeEqual, SHA-256 tokens).
-* **Persistencia:** SQLite modular mediante motor WASM (`sql.js`) con almacenamiento en `/data/elections.sqlite` y guía de migración transparente a MySQL 8+.
+* **Persistencia Dual (SQLite / MySQL):** Soporte nativo para SQLite en entorno local mediante motor WASM (`sql.js`) y MySQL 8+ en producción (`mysql2`).
 
 ---
 

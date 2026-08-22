@@ -241,6 +241,49 @@ export class VotingService {
       };
     });
 
+    // Helper para ordenar cursos por nombre lógico (Primero, Segundo, etc.)
+    const gradeWeights: Record<string, number> = {
+      'prejardin': 1, 'pre-jardin': 1,
+      'jardin': 2, 
+      'transicion': 3,
+      'primero': 4, '1ro': 4, '1°': 4,
+      'segundo': 5, '2do': 5, '2°': 5,
+      'tercero': 6, '3ro': 6, '3°': 6,
+      'cuarto': 7, '4to': 7, '4°': 7,
+      'quinto': 8, '5to': 8, '5°': 8,
+      'sexto': 9, '6to': 9, '6°': 9,
+      'septimo': 10, '7mo': 10, '7°': 10,
+      'octavo': 11, '8vo': 11, '8°': 11,
+      'noveno': 12, '9no': 12, '9°': 12,
+      'decimo': 13, '10mo': 13, '10°': 13,
+      'undecimo': 14, 'once': 14, '11mo': 14, '11°': 14,
+      'doce': 15, '12mo': 15, '12°': 15
+    };
+    const sortedGradeKeys = Object.keys(gradeWeights).sort((a, b) => b.length - a.length);
+
+    const getGradeWeight = (name: string): number => {
+      if (!name) return 999;
+      const normalized = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      for (const key of sortedGradeKeys) {
+        if (normalized.includes(key)) return gradeWeights[key];
+      }
+      const match = normalized.match(/\d+/);
+      if (match) return parseInt(match[0], 10);
+      return 999;
+    };
+
+    participationByCourse.sort((a, b) => {
+      const weightA = Math.min(getGradeWeight(a.course), getGradeWeight(a.grade));
+      const weightB = Math.min(getGradeWeight(b.course), getGradeWeight(b.grade));
+      
+      if (weightA !== weightB) {
+        return weightA - weightB;
+      }
+      
+      // Desempate alfabético ("Primero A" vs "Primero B")
+      return a.course.localeCompare(b.course, undefined, { numeric: true, sensitivity: 'base' });
+    });
+
     // Línea de tiempo
     const timeline = await this.voteRepo.getVotesTimeline(electionId);
 

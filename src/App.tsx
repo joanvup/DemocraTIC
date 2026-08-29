@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './client/hooks/useAuth.js';
+import { ThemeProvider } from './client/hooks/useTheme.js';
 import { VotingStationPage } from './client/pages/VotingStationPage.js';
 import { LoginPage } from './client/pages/LoginPage.js';
 import { DashboardPage } from './client/pages/DashboardPage.js';
@@ -70,6 +71,7 @@ function MainApp() {
   return (
     <VotingStationPage
       onNavigateToAdmin={() => setCurrentRoute(user ? 'DASHBOARD' : 'LOGIN')}
+      onNavigateToPublicResults={() => setCurrentRoute('PUBLIC_RESULTS')}
     />
   );
 }
@@ -77,7 +79,10 @@ function MainApp() {
 export default function App() {
   return (
     <AuthProvider>
-      <MainApp />
+      <ThemeProvider>
+        <MainApp />
+      </ThemeProvider>
     </AuthProvider>
   );
 }
+

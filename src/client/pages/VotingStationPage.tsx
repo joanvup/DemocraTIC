@@ -9,25 +9,38 @@ import { votingApi } from '../services/api.js';
 import { CandidateCard, BlankVoteCard } from '../components/voting/CandidateCard.js';
 import { ConfirmationModal } from '../components/voting/ConfirmationModal.js';
 import { QrScannerModal } from '../components/voting/QrScannerModal.js';
+import { useTheme } from '../hooks/useTheme.js';
 import {
+  BarChart3,
   Camera,
   CheckCircle2,
   Clock,
   Delete,
   Lock,
   LogOut,
+  Moon,
   RotateCcw,
   ShieldAlert,
   ShieldCheck,
   Sparkles,
+  Sun,
   UserCheck
 } from 'lucide-react';
 
-export function VotingStationPage({ onNavigateToAdmin }: { onNavigateToAdmin: () => void }) {
+export function VotingStationPage({
+  onNavigateToAdmin,
+  onNavigateToPublicResults
+}: {
+  onNavigateToAdmin: () => void;
+  onNavigateToPublicResults?: () => void;
+}) {
+  const { isDark, toggleTheme } = useTheme();
+
   // Estado General de la Jornada
   const [election, setElection] = useState<Election | null>(null);
   const [settings, setSettings] = useState<SchoolSettings | null>(null);
   const [loading, setLoading] = useState(true);
+
 
   // Flujo de Votación: 'IDENTIFY' | 'SELECT' | 'CONFIRM' | 'SUCCESS'
   const [step, setStep] = useState<'IDENTIFY' | 'SELECT' | 'SUCCESS'>('IDENTIFY');
@@ -309,11 +322,15 @@ export function VotingStationPage({ onNavigateToAdmin }: { onNavigateToAdmin: ()
   const isElectionOpen = election && election.status === 'OPEN';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between select-none">
+    <div className={`min-h-screen flex flex-col justify-between select-none transition-colors duration-200 ${
+      isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
+    }`}>
       {/* 1. Barra Superior Institucional */}
-      <header className="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between shadow-md">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center p-1 shadow-inner overflow-hidden">
+      <header className={`px-4 sm:px-6 py-4 flex items-center justify-between shadow-md transition-colors ${
+        isDark ? 'bg-slate-900 border-b border-slate-800' : 'bg-white border-b border-slate-200'
+      }`}>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white flex items-center justify-center p-1 shadow-inner overflow-hidden border border-slate-200 flex-shrink-0">
             {settings?.logo_url ? (
               <img src={settings.logo_url} alt="Logo Colegio" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
             ) : (
@@ -321,31 +338,67 @@ export function VotingStationPage({ onNavigateToAdmin }: { onNavigateToAdmin: ()
             )}
           </div>
           <div>
-            <h1 className="font-black text-lg sm:text-xl text-white tracking-tight leading-tight">
+            <h1 className={`font-black text-base sm:text-xl tracking-tight leading-tight ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}>
               {settings?.school_name || 'Colegio Bilingüe San Patricio'}
             </h1>
-            <p className="text-xs text-sky-400 font-semibold uppercase tracking-wider flex items-center gap-1.5">
+            <p className={`text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 ${
+              isDark ? 'text-sky-400' : 'text-sky-700'
+            }`}>
               <span>🗳️</span> {election?.name || 'Elecciones de Personería Estudiantil 2026'}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Badge de Estado */}
           {isElectionOpen ? (
-            <div className="flex items-center gap-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm">
+            <div className="hidden sm:flex items-center gap-2 bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               JORNADA ABIERTA
             </div>
           ) : (
-            <div className="flex items-center gap-2 bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-full text-xs font-bold">
+            <div className="hidden sm:flex items-center gap-2 bg-amber-500/20 text-amber-500 border border-amber-500/30 px-3 py-1.5 rounded-full text-xs font-bold">
               <Lock className="w-3.5 h-3.5" />
               ELECCIÓN CERRADA
             </div>
           )}
 
+          {/* Enlace Directo a Proyección de Resultados en Vivo */}
+          {onNavigateToPublicResults && (
+            <button
+              onClick={onNavigateToPublicResults}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 active:scale-95 text-white transition-all text-xs font-black flex items-center gap-1.5 shadow-md hover:shadow-sky-500/20 cursor-pointer"
+              title="Ver Proyección de Resultados en Vivo"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span className="inline">Resultados en Vivo</span>
+            </button>
+          )}
+
+          {/* Conmutador Modo Claro / Modo Oscuro */}
+          <button
+            onClick={toggleTheme}
+            className={`p-2 sm:px-3 sm:py-2 rounded-xl transition-all text-xs font-bold flex items-center gap-1.5 border cursor-pointer ${
+              isDark
+                ? 'bg-slate-800 hover:bg-slate-700 text-amber-300 border-slate-700'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+            }`}
+            title={isDark ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
+          >
+            {isDark ? <Sun className="w-4 h-4 text-amber-300" /> : <Moon className="w-4 h-4 text-slate-700" />}
+            <span className="hidden md:inline">{isDark ? 'Claro' : 'Oscuro'}</span>
+          </button>
+
+          {/* Acceso a Admin */}
           <button
             onClick={onNavigateToAdmin}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors text-xs font-bold flex items-center gap-1.5"
+            className={`p-2 sm:px-3 sm:py-2 rounded-xl transition-colors text-xs font-bold flex items-center gap-1.5 border cursor-pointer ${
+              isDark
+                ? 'bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border-slate-700'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border-slate-300'
+            }`}
             title="Panel de Administración"
           >
             <Lock className="w-3.5 h-3.5" />
@@ -358,20 +411,22 @@ export function VotingStationPage({ onNavigateToAdmin }: { onNavigateToAdmin: ()
       <main className="flex-grow flex items-center justify-center p-4 sm:p-6 md:p-8">
         {!isElectionOpen ? (
           /* Estado de Elección No Abierta */
-          <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center shadow-2xl space-y-4">
-            <div className="w-20 h-20 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-3xl flex items-center justify-center mx-auto">
+          <div className={`max-w-md w-full rounded-3xl p-8 text-center shadow-2xl space-y-4 border ${
+            isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+          }`}>
+            <div className="w-20 h-20 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-3xl flex items-center justify-center mx-auto">
               <Lock className="w-10 h-10" />
             </div>
-            <h2 className="text-2xl font-black text-white">Estación No Disponible</h2>
-            <p className="text-slate-400 text-sm">
+            <h2 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>Estación No Disponible</h2>
+            <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               La jornada de votación se encuentra en estado{' '}
-              <strong className="text-amber-400">{election?.status || 'NO INICIADA'}</strong>.
+              <strong className="text-amber-500 font-bold">{election?.status || 'NO INICIADA'}</strong>.
               El jurado electoral abrirá las mesas en el horario programado.
             </p>
             <div className="pt-2">
               <button
                 onClick={loadActiveElection}
-                className="px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2 mx-auto"
+                className="px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2 mx-auto cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
                 Actualizar Estado
@@ -382,15 +437,21 @@ export function VotingStationPage({ onNavigateToAdmin }: { onNavigateToAdmin: ()
           /* =================================================================
              PASO 1: IDENTIFICACIÓN DEL ESTUDIANTE (QR o ID Manual)
              ================================================================= */
-          <div className="max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl">
+          <div className={`max-w-2xl w-full rounded-3xl p-6 sm:p-10 shadow-2xl border ${
+            isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+          }`}>
             <div className="text-center space-y-2 mb-8">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-sky-500/20 text-sky-300 border border-sky-500/30 uppercase tracking-widest">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-sky-500/20 text-sky-500 border border-sky-500/30 uppercase tracking-widest">
                 <Sparkles className="w-3.5 h-3.5" /> Identificación del Votante
               </span>
-              <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+              <h2 className={`text-3xl sm:text-4xl font-black tracking-tight ${
+                isDark ? 'text-white' : 'text-slate-900'
+              }`}>
                 Bienvenido a la Votación
               </h2>
-              <p className="text-slate-400 text-sm sm:text-base max-w-lg mx-auto">
+              <p className={`text-sm sm:text-base max-w-lg mx-auto ${
+                isDark ? 'text-slate-400' : 'text-slate-600'
+              }`}>
                 Escanea el código QR de tu carnet estudiantil o escribe tu código ID para votar.
               </p>
             </div>
@@ -419,11 +480,13 @@ export function VotingStationPage({ onNavigateToAdmin }: { onNavigateToAdmin: ()
               </button>
 
               <div className="relative flex py-2 items-center">
-                <div className="flex-grow border-t border-slate-800"></div>
-                <span className="flex-shrink mx-4 text-xs font-bold text-slate-500 uppercase tracking-widest">
+                <div className={`flex-grow border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}></div>
+                <span className={`flex-shrink mx-4 text-xs font-bold uppercase tracking-widest ${
+                  isDark ? 'text-slate-500' : 'text-slate-400'
+                }`}>
                   O escribe tu código ID
                 </span>
-                <div className="flex-grow border-t border-slate-800"></div>
+                <div className={`flex-grow border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}></div>
               </div>
 
               {/* Input Código Manual */}
@@ -437,13 +500,19 @@ export function VotingStationPage({ onNavigateToAdmin }: { onNavigateToAdmin: ()
                       if (e.key === 'Enter') handleIdentify();
                     }}
                     placeholder="Ej. 5306, 5729, 5732..."
-                    className="w-full text-center text-2xl sm:text-3xl font-mono font-bold tracking-widest py-4 px-4 bg-slate-950 border-2 border-slate-700 rounded-2xl text-white placeholder:text-slate-600 focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/20 transition-all uppercase"
+                    className={`w-full text-center text-2xl sm:text-3xl font-mono font-bold tracking-widest py-4 px-4 border-2 rounded-2xl focus:outline-none focus:ring-4 transition-all uppercase ${
+                      isDark
+                        ? 'bg-slate-950 border-slate-700 text-white placeholder:text-slate-600 focus:border-sky-500 focus:ring-sky-500/20'
+                        : 'bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:ring-sky-500/20'
+                    }`}
                     autoFocus
                   />
                   {studentCodeInput && (
                     <button
                       onClick={handleKeypadClear}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-2"
+                      className={`absolute right-4 top-1/2 -translate-y-1/2 p-2 ${
+                        isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-700'
+                      }`}
                       title="Limpiar"
                     >
                       <Delete className="w-6 h-6" />
@@ -462,7 +531,11 @@ export function VotingStationPage({ onNavigateToAdmin }: { onNavigateToAdmin: ()
                         else if (key === '⌫') handleKeypadBackspace();
                         else handleKeypadPress(key);
                       }}
-                      className="py-3.5 sm:py-4 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-mono font-bold text-lg sm:text-xl border border-slate-700/60 shadow-sm transition-all flex items-center justify-center cursor-pointer"
+                      className={`py-3.5 sm:py-4 rounded-xl active:scale-95 font-mono font-bold text-lg sm:text-xl border shadow-sm transition-all flex items-center justify-center cursor-pointer ${
+                        isDark
+                          ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700/60'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-900 border-slate-300'
+                      }`}
                     >
                       {key}
                     </button>
@@ -494,18 +567,20 @@ export function VotingStationPage({ onNavigateToAdmin }: { onNavigateToAdmin: ()
              ================================================================= */
           <div className="w-full max-w-6xl space-y-6">
             {/* Banner del Votante y Temporizador */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className={`rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 border ${
+              isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+            }`}>
               <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-2xl bg-sky-500/20 text-sky-500 border border-sky-500/30 flex items-center justify-center flex-shrink-0">
                   <UserCheck className="w-7 h-7" />
                 </div>
                 <div>
-                  <span className="text-xs text-sky-300 font-bold uppercase tracking-wider">Estudiante Habilitado</span>
-                  <h3 className="text-xl sm:text-2xl font-black text-white">
+                  <span className="text-xs text-sky-500 font-bold uppercase tracking-wider">Estudiante Habilitado</span>
+                  <h3 className={`text-xl sm:text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {studentInfo?.full_name}
                   </h3>
-                  <p className="text-xs font-semibold text-slate-400">
-                    Curso: <span className="text-white">{studentInfo?.course}</span> (Grado {studentInfo?.grade})
+                  <p className={`text-xs font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    Curso: <span className={isDark ? 'text-white font-bold' : 'text-slate-900 font-bold'}>{studentInfo?.course}</span> (Grado {studentInfo?.grade})
                   </p>
                 </div>
               </div>
@@ -514,17 +589,23 @@ export function VotingStationPage({ onNavigateToAdmin }: { onNavigateToAdmin: ()
               <div className="flex items-center gap-4">
                 <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl border font-mono font-bold text-sm ${
                   timeLeft <= 20
-                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse'
-                    : 'bg-slate-800 text-slate-300 border-slate-700'
+                    ? 'bg-rose-500/20 text-rose-500 border-rose-500/40 animate-pulse'
+                    : isDark
+                    ? 'bg-slate-800 text-slate-300 border-slate-700'
+                    : 'bg-slate-100 text-slate-700 border-slate-300'
                 }`}>
-                  <Clock className="w-4 h-4 text-sky-400" />
+                  <Clock className="w-4 h-4 text-sky-500" />
                   <span>Tiempo: {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}</span>
                 </div>
 
                 <button
                   type="button"
                   onClick={resetToIdentification}
-                  className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                  className={`p-2.5 rounded-xl transition-colors border cursor-pointer ${
+                    isDark
+                      ? 'bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border-slate-700'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border-slate-300'
+                  }`}
                   title="Cancelar y Salir"
                 >
                   <LogOut className="w-5 h-5" />
@@ -534,10 +615,10 @@ export function VotingStationPage({ onNavigateToAdmin }: { onNavigateToAdmin: ()
 
             {/* Título de Instrucción */}
             <div className="text-center">
-              <h2 className="text-2xl sm:text-3xl font-black text-white">
+              <h2 className={`text-2xl sm:text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 Elige tu opción en el tarjetón oficial
               </h2>
-              <p className="text-slate-400 text-sm mt-1">
+              <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 Toca la tarjeta del candidato de tu preferencia o la opción de voto en blanco.
               </p>
             </div>
@@ -565,43 +646,53 @@ export function VotingStationPage({ onNavigateToAdmin }: { onNavigateToAdmin: ()
           /* =================================================================
              PASO 3: PANTALLA DE ÉXITO & REINICIO AUTOMÁTICO
              ================================================================= */
-          <div className="max-w-lg w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-12 text-center shadow-2xl space-y-6">
-            <div className="w-24 h-24 bg-emerald-500/10 text-emerald-400 border-2 border-emerald-500/30 rounded-3xl flex items-center justify-center mx-auto animate-bounce">
+          <div className={`max-w-lg w-full rounded-3xl p-8 sm:p-12 text-center shadow-2xl space-y-6 border ${
+            isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+          }`}>
+            <div className="w-24 h-24 bg-emerald-500/10 text-emerald-500 border-2 border-emerald-500/30 rounded-3xl flex items-center justify-center mx-auto animate-bounce">
               <CheckCircle2 className="w-14 h-14" />
             </div>
 
             <div className="space-y-2">
-              <span className="text-xs font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/20 px-3 py-1 rounded-full border border-emerald-500/30">
+              <span className="text-xs font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/20 px-3 py-1 rounded-full border border-emerald-500/30">
                 ¡Voto Registrado con Éxito!
               </span>
-              <h2 className="text-3xl sm:text-4xl font-black text-white">
+              <h2 className={`text-3xl sm:text-4xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 Gracias por Participar
               </h2>
-              <p className="text-slate-400 text-sm">
+              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 Tu voto ha sido depositado de forma 100% anónima en la urna electrónica del colegio.
               </p>
             </div>
 
             {voteReceipt && (
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
+              <div className={`p-4 rounded-2xl border ${
+                isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <span className={`text-[10px] font-bold uppercase tracking-wider block ${
+                  isDark ? 'text-slate-500' : 'text-slate-400'
+                }`}>
                   Código de Recibo Electoral Anónimo
                 </span>
-                <span className="font-mono text-xl font-black text-sky-400 tracking-widest">
+                <span className="font-mono text-xl font-black text-sky-500 tracking-widest">
                   REC-{voteReceipt}
                 </span>
               </div>
             )}
 
-            <div className="pt-4 border-t border-slate-800/80">
+            <div className={`pt-4 border-t ${isDark ? 'border-slate-800/80' : 'border-slate-200'}`}>
               <p className="text-xs text-slate-500">
                 La pantalla se reiniciará automáticamente en{' '}
-                <strong className="text-sky-400 font-bold">{resetCountdown} segundos</strong>...
+                <strong className="text-sky-500 font-bold">{resetCountdown} segundos</strong>...
               </p>
               <button
                 type="button"
                 onClick={resetToIdentification}
-                className="mt-4 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-sm transition-colors cursor-pointer"
+                className={`mt-4 px-6 py-3 rounded-xl font-bold text-sm transition-colors cursor-pointer border ${
+                  isDark
+                    ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                }`}
               >
                 Reiniciar Ahora
               </button>
@@ -611,9 +702,13 @@ export function VotingStationPage({ onNavigateToAdmin }: { onNavigateToAdmin: ()
       </main>
 
       {/* 3. Pie de Página */}
-      <footer className="bg-slate-900/80 border-t border-slate-800/80 px-6 py-3 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <footer className={`border-t px-6 py-3 text-center text-xs flex flex-col sm:flex-row items-center justify-between gap-2 transition-colors ${
+        isDark
+          ? 'bg-slate-900/80 border-slate-800/80 text-slate-500'
+          : 'bg-white border-slate-200 text-slate-500 shadow-sm'
+      }`}>
         <p>{settings?.footer_text || 'Sistema de Elecciones Escolares • Secreto de Voto Garantizado'}</p>
-        <span className="font-mono text-[11px] text-slate-600">Terminal ID: ESTACION-01 • Versión 2026.1</span>
+        <span className="font-mono text-[11px] text-slate-400">Terminal ID: ESTACION-01 • Versión 2026.1</span>
       </footer>
 
       {/* Modal de Escaneo QR */}

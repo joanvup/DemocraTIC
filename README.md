@@ -26,8 +26,25 @@ Sistema integral, seguro y en tiempo real para votación escolar y gestión demo
   * ... hasta `20260100` (100 estudiantes precargados en grados 1 a 5).
 
 ### 3. Pantalla de Resultados en Vivo (Videobeam / Proyector)
-* **Ruta:** `/resultados`
-* Transmisión en tiempo real vía Server-Sent Events (SSE), métricas de participación por curso y conmutador a pantalla completa.
+* **Ruta:** `/resultados` (o mediante el botón **"Resultados en Vivo"** en la barra superior de la estación de votación)
+* Transmisión en tiempo real vía Server-Sent Events (SSE), métricas de participación por curso, visualización del ganador proyectado y conmutador a pantalla completa.
+
+---
+
+## 🌟 Novedades y Últimas Actualizaciones
+
+* **🛡️ Seguridad Perimetral por IP (Filtro / Whitelist de Red):**
+  * Posibilidad de restringir las votaciones exclusivamente a las redes Wi-Fi autorizadas o computadores oficiales de la institución.
+  * Configurable directamente desde la pestaña de **Configuración** en el panel administrativo, con detección automática de la IP pública actual.
+  * Pantalla de bloqueo institucional (*Acceso Denegado*) con diseño amigable para terminales fuera de la red autorizada.
+* **📊 Enlace a Proyección de Resultados en Vivo:**
+  * Acceso directo e intuitivo desde la barra superior de la estación de votación para permitir que la comunidad educativa observe el escrutinio en tiempo real.
+* **🌓 Selector de Modo Claro / Modo Oscuro:**
+  * Conmutador de tema visual accesible en la estación de votación y en la pantalla de proyección de resultados.
+  * Persistencia automática de la preferencia visual en el navegador (`localStorage`).
+  * Alto contraste optimizado tanto para ambientes oscuros / proyectores como para pantallas en salones muy iluminados.
+* **🔄 Resiliencia y Auto-Recuperación de Base de Datos:**
+  * Detección proactiva de integridad y respaldo automático preventivo (`elections.sqlite.corrupt.<timestamp>`) que evita caídas del servidor ante apagados abruptos.
 
 ---
 
@@ -40,7 +57,9 @@ Sistema integral, seguro y en tiempo real para votación escolar y gestión demo
    * Al identificarse, el estudiante recibe un token criptográfico válido por 120 segundos que se destruye inmediatamente tras depositar el voto.
 3. **Firmas Digitales QR (HMAC-SHA256):**
    * Los carnets estudiantiles incorporan una firma generada con clave secreta del servidor para evitar falsificaciones o duplicaciones de carnets.
-4. **Auditoría Inmutable:**
+4. **Seguridad Perimetral:**
+   * Validación de encabezados `x-forwarded-for` y direcciones IP de origen para estaciones de voto.
+5. **Auditoría Inmutable:**
    * Registro cronológico de aperturas de mesa, cierres, inicios de sesión e importaciones de censos.
 
 ---
@@ -54,16 +73,17 @@ Sistema integral, seguro y en tiempo real para votación escolar y gestión demo
   * Opción oficial de Voto en Blanco.
   * Modal de confirmación previa con bloqueo de doble clic.
   * Animación de celebración y reinicio automático en 6 segundos.
+  * Selector de tema claro/oscuro y acceso rápido a resultados en vivo.
 * **Panel de Control Administrativo:**
-  * Dashboard de escrutinio en tiempo real.
+  * Dashboard de escrutinio en tiempo real con gráficas de participación.
   * Control de apertura y cierre de mesas.
   * Gestión completa de candidatos (fotos, slogans, listas).
-  * Censo escolar con búsqueda, filtros por curso/grado y visualizador/impresor de carnets individuales.
+  * Censo escolar con búsqueda, filtros por curso/grado y visualizador/impresor de carnets individuales y colectivos.
   * **Importador Masivo de Excel:** Detección de cabeceras, mapeo inteligente de columnas, validación previa de duplicados e inserción atómica.
   * **Reportes & Actas:**
     * Generación de **Acta Oficial de Escrutinio en PDF** con tablas estructuradas, porcentajes y campos de firma para jurados.
     * Exportación a **Excel Multi-Hoja** con consolidado y participación por curso.
-  * **Personalización Institucional:** Cambio de nombre de colegio, logo y colores.
+  * **Personalización Institucional y Seguridad:** Cambio de nombre de colegio, logo, pie de página y control de restricción de IP.
 
 ---
 

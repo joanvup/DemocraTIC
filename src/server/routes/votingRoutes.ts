@@ -17,6 +17,24 @@ const settingsRepo = new SettingsRepository();
 
 const votingService = new VotingService(electionRepo, candidateRepo, studentRepo, voteRepo);
 
+function getClientIp(req: any): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  const ip = forwarded ? (typeof forwarded === 'string' ? forwarded.split(',')[0] : forwarded[0]) : req.socket.remoteAddress;
+  return ip ? ip.trim() : '';
+}
+
+function checkIpRestriction(clientIp: string, settings: any): boolean {
+  if (settings.restrict_by_ip !== 1) return true;
+  if (!settings.allowed_ips) return false;
+  
+  if (clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === '::ffff:127.0.0.1') {
+    return true;
+  }
+
+  const allowed = settings.allowed_ips.split(',').map(i => i.trim());
+  return allowed.includes(clientIp);
+}
+
 /**
  * GET /api/v1/voting/active-election
  * Retorna la información pública de la jornada y ajustes del colegio
@@ -43,6 +61,13 @@ router.get('/active-election', async (req, res) => {
  */
 router.post('/identify', async (req, res) => {
   try {
+    const settings = await settingsRepo.getSettings();
+    const clientIp = getClientIp(req);
+    if (!checkIpRestriction(clientIp, settings)) {
+      res.status(403).json({ success: false, message: 'Acceso Denegado: Fuera de la red del colegio.' });
+      return;
+    }
+
     const body = req.body as IdentifyStudentRequest;
     const result = await votingService.identifyStudent({
       studentCode: body.student_code,

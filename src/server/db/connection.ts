@@ -66,6 +66,8 @@ export async function getSqliteConnection(): Promise<Database> {
     try {
       const fileBuffer = fs.readFileSync(DB_FILE_PATH);
       sqliteDbInstance = new SQL.Database(fileBuffer);
+      // Validate database integrity to catch "unsupported file format" early
+      sqliteDbInstance.exec('SELECT count(*) FROM sqlite_master;');
     } catch (err: any) {
       console.error('Failed to load existing database (might be corrupted):', err.message);
       const backupPath = DB_FILE_PATH + '.corrupt.' + Date.now();

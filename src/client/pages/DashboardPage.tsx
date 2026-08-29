@@ -45,7 +45,7 @@ import {
   Lock,
   Edit3,
   Image as ImageIcon
-} from 'lucide-react';
+, ShieldAlert } from 'lucide-react';
 
 type AdminTab = 'DASHBOARD' | 'ELECTIONS' | 'CANDIDATES' | 'STUDENTS' | 'IMPORT' | 'REPORTS' | 'AUDIT' | 'SETTINGS';
 
@@ -116,6 +116,7 @@ export function DashboardPage({
 
   // Configuración Form
   const [settingsForm, setSettingsForm] = useState<Partial<SchoolSettings>>({});
+  const [myIp, setMyIp] = useState<string>('');
   const [savingSettings, setSavingSettings] = useState(false);
 
   // Cargar lista de elecciones inicial
@@ -1276,6 +1277,44 @@ export function DashboardPage({
             </div>
 
             <form onSubmit={handleSaveSettings} className="space-y-4">
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-4">
+                <h3 className="text-sm font-black text-orange-900 mb-1 flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4" />
+                  Seguridad Perimetral (Filtro IP)
+                </h3>
+                <p className="text-xs text-orange-800 mb-3 leading-relaxed">
+                  Restringe el acceso a la estación de votación para que solo funcione desde la red Wi-Fi o computadores del colegio.
+                  <br /><strong>Tu IP actual es:</strong> <code className="bg-orange-100 px-1 rounded">{myIp}</code>
+                </p>
+                
+                <div className="flex items-center gap-2 mb-3">
+                  <input 
+                    type="checkbox" 
+                    id="restrict_by_ip"
+                    checked={settingsForm.restrict_by_ip === 1}
+                    onChange={e => setSettingsForm({ ...settingsForm, restrict_by_ip: e.target.checked ? 1 : 0 })}
+                    className="w-4 h-4 text-orange-600 rounded"
+                  />
+                  <label htmlFor="restrict_by_ip" className="text-xs font-bold text-orange-900 cursor-pointer">
+                    Habilitar Restricción por IP
+                  </label>
+                </div>
+
+                {settingsForm.restrict_by_ip === 1 && (
+                  <div>
+                    <label className="text-xs font-bold text-orange-800 block mb-1">IPs Permitidas (separadas por coma)</label>
+                    <input
+                      type="text"
+                      value={settingsForm.allowed_ips || ''}
+                      onChange={e => setSettingsForm({ ...settingsForm, allowed_ips: e.target.value })}
+                      placeholder="Ej: 190.158.12.34, 200.14.55.1"
+                      className="w-full bg-white border border-orange-300 rounded-lg px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-orange-500"
+                    />
+                    <p className="text-[10px] text-orange-700 mt-1">Si dejas esto en blanco y activas la restricción, nadie podrá votar.</p>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">Nombre Oficial del Colegio</label>
                 <input

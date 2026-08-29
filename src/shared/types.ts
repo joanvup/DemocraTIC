@@ -90,6 +90,8 @@ export interface SchoolSettings {
   footer_text: string;
   allow_qr_scanner: number;
   allow_manual_id: number;
+  restrict_by_ip: number;
+  allowed_ips: string;
   updated_at: string;
 }
 

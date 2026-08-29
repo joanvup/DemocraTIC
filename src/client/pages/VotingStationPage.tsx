@@ -54,6 +54,7 @@ export function VotingStationPage({ onNavigateToAdmin }: { onNavigateToAdmin: ()
 
   // Reset countdown tras voto exitoso
   const [resetCountdown, setResetCountdown] = useState(6);
+  const [isIpRestricted, setIsIpRestricted] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -61,8 +62,10 @@ export function VotingStationPage({ onNavigateToAdmin }: { onNavigateToAdmin: ()
   const loadActiveElection = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await votingApi.getActiveElection();
-      if (res.success) {
+      const res = await votingApi.getActiveElection() as any;
+      if (res.is_ip_restricted) {
+        setIsIpRestricted(true);
+      } else if (res.success) {
         setElection(res.election);
         setSettings(res.settings);
       }
@@ -76,6 +79,27 @@ export function VotingStationPage({ onNavigateToAdmin }: { onNavigateToAdmin: ()
   useEffect(() => {
     loadActiveElection();
   }, [loadActiveElection]);
+
+
+  if (isIpRestricted) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mb-6">
+          <ShieldAlert className="w-12 h-12 text-red-500" />
+        </div>
+        <h1 className="text-3xl font-black text-white mb-4">Acceso Denegado</h1>
+        <p className="text-lg text-slate-300 max-w-lg mb-8">
+          Las votaciones están restringidas por seguridad. <strong>Solo puedes votar conectado a la red Wi-Fi o en los computadores oficiales de la institución.</strong>
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-6 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold transition-all"
+        >
+          Reintentar Conexión
+        </button>
+      </div>
+    );
+  }
 
   // Reset total al inicio
   const resetToIdentification = useCallback(() => {

@@ -457,6 +457,16 @@ router.get('/settings', async (_req, res) => {
   }
 });
 
+router.get('/my-ip', requireAuth(['SUPERADMIN']), async (req, res) => {
+  try {
+    const forwarded = req.headers['x-forwarded-for'];
+    const ip = forwarded ? (typeof forwarded === 'string' ? forwarded.split(',')[0] : forwarded[0]) : req.socket.remoteAddress;
+    res.json({ success: true, ip: ip ? ip.trim() : 'Desconocida' });
+  } catch (err: unknown) {
+    res.status(500).json({ success: false, message: 'Error al obtener IP' });
+  }
+});
+
 router.put('/settings', requireAuth(['SUPERADMIN']), async (req: AuthenticatedRequest, res) => {
   try {
     await settingsRepo.updateSettings(req.body);

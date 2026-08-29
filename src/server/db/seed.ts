@@ -32,8 +32,8 @@ export async function seedDatabase(): Promise<void> {
 
   // 2. Create Default School Settings
   await executeRun(
-    `INSERT INTO settings (id, school_name, logo_url, primary_color, secondary_color, footer_text, allow_qr_scanner, allow_manual_id, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+    `INSERT INTO settings (id, school_name, logo_url, primary_color, secondary_color, footer_text, allow_qr_scanner, allow_manual_id, restrict_by_ip, allowed_ips, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
     [
       'set-default-1',
       'Colegio Bilingüe San Patricio',
@@ -43,6 +43,8 @@ export async function seedDatabase(): Promise<void> {
       'Gobierno Escolar y Democracia Participativa 2026',
       1,
       1,
+      0,
+      '',
       now
     ]
   );

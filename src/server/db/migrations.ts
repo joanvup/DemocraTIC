@@ -133,5 +133,17 @@ export async function runMigrations(): Promise<void> {
     );
   `);
 
+  try {
+    await executeRun(`ALTER TABLE settings ADD COLUMN restrict_by_ip INTEGER NOT NULL DEFAULT 0;`);
+  } catch (e) {
+    // Ignore if column already exists
+  }
+  
+  try {
+    await executeRun(`ALTER TABLE settings ADD COLUMN allowed_ips TEXT;`);
+  } catch (e) {
+    // Ignore if column already exists
+  }
+
   console.log('[MIGRATIONS] Migrations completed successfully.');
 }

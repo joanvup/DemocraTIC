@@ -5,7 +5,7 @@ import { SchoolSettings } from '../../shared/types.js';
 export class SettingsRepository implements ISettingsRepository {
   async getSettings(): Promise<SchoolSettings> {
     const settings = await executeGetOne<SchoolSettings>(
-      'SELECT id, school_name, logo_url, primary_color, secondary_color, footer_text, allow_qr_scanner, allow_manual_id, updated_at FROM settings LIMIT 1'
+      'SELECT id, school_name, logo_url, primary_color, secondary_color, footer_text, allow_qr_scanner, allow_manual_id, restrict_by_ip, allowed_ips, updated_at FROM settings LIMIT 1'
     );
 
     if (settings) {
@@ -23,6 +23,8 @@ export class SettingsRepository implements ISettingsRepository {
       footer_text: 'Elecciones Democráticas de Personería Estudiantil',
       allow_qr_scanner: 1,
       allow_manual_id: 1,
+      restrict_by_ip: 0,
+      allowed_ips: '',
       updated_at: now
     };
   }
@@ -38,6 +40,8 @@ export class SettingsRepository implements ISettingsRepository {
     if (settings.footer_text !== undefined) { fields.push('footer_text = ?'); values.push(settings.footer_text); }
     if (settings.allow_qr_scanner !== undefined) { fields.push('allow_qr_scanner = ?'); values.push(settings.allow_qr_scanner); }
     if (settings.allow_manual_id !== undefined) { fields.push('allow_manual_id = ?'); values.push(settings.allow_manual_id); }
+    if (settings.restrict_by_ip !== undefined) { fields.push('restrict_by_ip = ?'); values.push(settings.restrict_by_ip); }
+    if (settings.allowed_ips !== undefined) { fields.push('allowed_ips = ?'); values.push(settings.allowed_ips); }
 
     if (fields.length === 0) return;
 

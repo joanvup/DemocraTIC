@@ -43,7 +43,7 @@ export async function runMigrations(): Promise<void> {
       list_number INTEGER NOT NULL,
       slogan VARCHAR(255),
       description TEXT,
-      photo_url TEXT,
+      photo_url LONGTEXT,
       display_order INTEGER NOT NULL DEFAULT 0,
       is_active INTEGER NOT NULL DEFAULT 1,
       created_at VARCHAR(30) NOT NULL,
@@ -123,7 +123,7 @@ export async function runMigrations(): Promise<void> {
     CREATE TABLE IF NOT EXISTS settings (
       id VARCHAR(36) PRIMARY KEY,
       school_name VARCHAR(150) NOT NULL,
-      logo_url TEXT,
+      logo_url LONGTEXT,
       primary_color VARCHAR(20) NOT NULL DEFAULT '#1e3a8a',
       secondary_color VARCHAR(20) NOT NULL DEFAULT '#0284c7',
       footer_text VARCHAR(255) NOT NULL DEFAULT 'Elecciones Democráticas de Personería Estudiantil',
@@ -143,6 +143,22 @@ export async function runMigrations(): Promise<void> {
     await executeRun(`ALTER TABLE settings ADD COLUMN allowed_ips TEXT;`);
   } catch (e) {
     // Ignore if column already exists
+  }
+
+  // --- AUTOMATIC MYSQL TYPE UPGRADES ---
+  // In MySQL, TEXT is limited to 64KB, which truncates Base64 images.
+  // We automatically upgrade these columns to LONGTEXT (up to 4GB).
+  // SQLite does not support MODIFY COLUMN, so this will simply be ignored by SQLite.
+  try {
+    await executeRun(`ALTER TABLE candidates MODIFY COLUMN photo_url LONGTEXT;`);
+  } catch (e) {
+    // Ignored in SQLite or if unsupported
+  }
+  
+  try {
+    await executeRun(`ALTER TABLE settings MODIFY COLUMN logo_url LONGTEXT;`);
+  } catch (e) {
+    // Ignored in SQLite or if unsupported
   }
 
   console.log('[MIGRATIONS] Migrations completed successfully.');

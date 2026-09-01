@@ -13,10 +13,12 @@ import { QrScannerModal } from '../components/voting/QrScannerModal.js';
 import { useTheme } from '../hooks/useTheme.js';
 import {
   BarChart3,
+  Calendar,
   Camera,
   CheckCircle2,
   Clock,
   Delete,
+  Info,
   Lock,
   LogOut,
   Moon,
@@ -321,6 +323,8 @@ export function VotingStationPage({
   }
 
   const isElectionOpen = election && election.status === 'OPEN';
+  const isElectionScheduled = election && election.status === 'SCHEDULED';
+  const isElectionActiveOrScheduled = isElectionOpen || isElectionScheduled;
 
   return (
     <div className={`min-h-screen flex flex-col justify-between select-none transition-colors duration-200 ${
@@ -358,6 +362,11 @@ export function VotingStationPage({
             <div className="hidden sm:flex items-center gap-2 bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               JORNADA ABIERTA
+            </div>
+          ) : isElectionScheduled ? (
+            <div className="hidden sm:flex items-center gap-2 bg-sky-500/20 text-sky-400 border border-sky-500/30 px-3 py-1.5 rounded-full text-xs font-bold shadow-sm">
+              <Calendar className="w-3.5 h-3.5 text-sky-400" />
+              JORNADA PROGRAMADA
             </div>
           ) : (
             <div className="hidden sm:flex items-center gap-2 bg-amber-500/20 text-amber-500 border border-amber-500/30 px-3 py-1.5 rounded-full text-xs font-bold">
@@ -410,8 +419,8 @@ export function VotingStationPage({
 
       {/* 2. Cuerpo Principal según el Paso */}
       <main className="flex-grow flex items-center justify-center p-4 sm:p-6 md:p-8">
-        {!isElectionOpen ? (
-          /* Estado de Elección No Abierta */
+        {!isElectionActiveOrScheduled ? (
+          /* Estado de Elección No Disponible (Borrador o Finalizada) */
           <div className={`max-w-md w-full rounded-3xl p-8 text-center shadow-2xl space-y-4 border ${
             isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
           }`}>
@@ -421,7 +430,7 @@ export function VotingStationPage({
             <h2 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>Estación No Disponible</h2>
             <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               La jornada de votación se encuentra en estado{' '}
-              <strong className="text-amber-500 font-bold">{election?.status || 'NO INICIADA'}</strong>.
+              <strong className="text-amber-500 font-bold">{election?.status || 'CERRADA / FINALIZADA'}</strong>.
               El jurado electoral abrirá las mesas en el horario programado.
             </p>
             <div className="pt-2">
@@ -446,20 +455,51 @@ export function VotingStationPage({
                   isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
                 }`}>
                   <div className="text-center space-y-2 mb-6">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-sky-500/20 text-sky-500 border border-sky-500/30 uppercase tracking-widest">
-                      <Sparkles className="w-3.5 h-3.5" /> Identificación del Votante
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest border ${
+                      isElectionOpen 
+                        ? 'bg-sky-500/20 text-sky-500 border-sky-500/30' 
+                        : 'bg-amber-500/20 text-amber-500 border-amber-500/30'
+                    }`}>
+                      {isElectionOpen ? (
+                        <>
+                          <Sparkles className="w-3.5 h-3.5" /> Identificación del Votante
+                        </>
+                      ) : (
+                        <>
+                          <Calendar className="w-3.5 h-3.5" /> Jornada Programada
+                        </>
+                      )}
                     </span>
                     <h2 className={`text-2xl sm:text-3xl font-black tracking-tight ${
                       isDark ? 'text-white' : 'text-slate-900'
                     }`}>
-                      Bienvenido a la Votación
+                      {isElectionOpen ? 'Bienvenido a la Votación' : 'Estación Electoral Preparada'}
                     </h2>
                     <p className={`text-xs sm:text-sm max-w-md mx-auto ${
                       isDark ? 'text-slate-400' : 'text-slate-600'
                     }`}>
-                      Escanea el código QR de tu carnet estudiantil o escribe tu código ID para votar.
+                      {isElectionOpen 
+                        ? 'Escanea el código QR de tu carnet estudiantil o escribe tu código ID para votar.'
+                        : 'Esta elección está programada. Conoce aquí los candidatos oficiales antes de la apertura de mesas.'}
                     </p>
                   </div>
+
+                  {/* Banner informativo si la elección está PROGRAMADA */}
+                  {isElectionScheduled && (
+                    <div className="mb-6 p-4 rounded-2xl bg-sky-950/60 border-2 border-sky-500/40 text-sky-200 flex items-start gap-3 animate-in fade-in">
+                      <Info className="w-6 h-6 text-sky-400 flex-shrink-0 mt-0.5" />
+                      <div className="text-xs sm:text-sm space-y-1">
+                        <h4 className="font-bold text-sky-100 flex items-center gap-1.5">
+                          Jornada Programada
+                        </h4>
+                        <p className="text-slate-300">
+                          {election?.start_at 
+                            ? `Apertura oficial programada para: ${new Date(election.start_at).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}.`
+                            : 'La jornada comenzará en cuanto el jurado electoral active las mesas de votación.'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Mensaje de Error si ya votó o código no existe */}
                   {identError && (

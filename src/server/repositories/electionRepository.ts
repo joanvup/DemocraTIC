@@ -12,11 +12,16 @@ export class ElectionRepository implements IElectionRepository {
   }
 
   async findActive(): Promise<Election | null> {
-    // Prefer OPEN, otherwise SCHEDULED, otherwise latest
+    // Prefer OPEN, then SCHEDULED, otherwise latest
     const openElection = await executeGetOne<Election>(
       "SELECT id, name, year, description, start_at, end_at, status, allow_blank_vote, show_live_results, created_at, updated_at FROM elections WHERE status = 'OPEN' ORDER BY created_at DESC LIMIT 1"
     );
     if (openElection) return openElection;
+
+    const scheduledElection = await executeGetOne<Election>(
+      "SELECT id, name, year, description, start_at, end_at, status, allow_blank_vote, show_live_results, created_at, updated_at FROM elections WHERE status = 'SCHEDULED' ORDER BY start_at ASC, created_at DESC LIMIT 1"
+    );
+    if (scheduledElection) return scheduledElection;
 
     return executeGetOne<Election>(
       'SELECT id, name, year, description, start_at, end_at, status, allow_blank_vote, show_live_results, created_at, updated_at FROM elections ORDER BY created_at DESC LIMIT 1'

@@ -46,6 +46,9 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
 
 export const votingApi = {
   getActiveElection: () => fetchJson<{ success: boolean; election: Election | null; settings: SchoolSettings }>('/api/v1/voting/active-election'),
+  getCandidates: (electionId?: string) => fetchJson<{ success: boolean; candidates: Candidate[]; election?: Election }>(
+    `/api/v1/voting/candidates${electionId ? `?election_id=${electionId}` : ''}`
+  ),
   identifyStudent: (payload: IdentifyStudentRequest) => fetchJson<IdentifyStudentResponse>('/api/v1/voting/identify', {
     method: 'POST',
     body: JSON.stringify(payload)

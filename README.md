@@ -33,6 +33,9 @@ Sistema integral, seguro y en tiempo real para votación escolar y gestión demo
 
 ## 🌟 Novedades y Últimas Actualizaciones
 
+* **👥 Visualizador de Candidatos Oficiales (`CandidatesDisplay`):**
+  * Muestra visual, elegante y reactiva de los candidatos oficiales a personería directamente en la pantalla de bienvenida / identificación de la estación de votación.
+  * Consulta en tiempo real desde la base de datos: número de tarjetón, fotografía oficial, curso/grado, lema de campaña y ficha detallada de propuestas.
 * **🛡️ Seguridad Perimetral por IP (Filtro / Whitelist de Red):**
   * Posibilidad de restringir las votaciones exclusivamente a las redes Wi-Fi autorizadas o computadores oficiales de la institución.
   * Configurable directamente desde la pestaña de **Configuración** en el panel administrativo, con detección automática de la IP pública actual.

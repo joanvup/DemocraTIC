@@ -7,6 +7,7 @@ import {
 } from '../../shared/types.js';
 import { votingApi } from '../services/api.js';
 import { CandidateCard, BlankVoteCard } from '../components/voting/CandidateCard.js';
+import { CandidatesDisplay } from '../components/voting/CandidatesDisplay.js';
 import { ConfirmationModal } from '../components/voting/ConfirmationModal.js';
 import { QrScannerModal } from '../components/voting/QrScannerModal.js';
 import { useTheme } from '../hooks/useTheme.js';
@@ -435,129 +436,141 @@ export function VotingStationPage({
           </div>
         ) : step === 'IDENTIFY' ? (
           /* =================================================================
-             PASO 1: IDENTIFICACIÓN DEL ESTUDIANTE (QR o ID Manual)
+             PASO 1: IDENTIFICACIÓN DEL ESTUDIANTE Y MUESTRA DE CANDIDATOS
              ================================================================= */
-          <div className={`max-w-2xl w-full rounded-3xl p-6 sm:p-10 shadow-2xl border ${
-            isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-          }`}>
-            <div className="text-center space-y-2 mb-8">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-sky-500/20 text-sky-500 border border-sky-500/30 uppercase tracking-widest">
-                <Sparkles className="w-3.5 h-3.5" /> Identificación del Votante
-              </span>
-              <h2 className={`text-3xl sm:text-4xl font-black tracking-tight ${
-                isDark ? 'text-white' : 'text-slate-900'
-              }`}>
-                Bienvenido a la Votación
-              </h2>
-              <p className={`text-sm sm:text-base max-w-lg mx-auto ${
-                isDark ? 'text-slate-400' : 'text-slate-600'
-              }`}>
-                Escanea el código QR de tu carnet estudiantil o escribe tu código ID para votar.
-              </p>
-            </div>
-
-            {/* Mensaje de Error si ya votó o código no existe */}
-            {identError && (
-              <div className="mb-6 p-4 rounded-2xl bg-rose-950/80 border-2 border-rose-500/50 text-rose-200 flex items-start gap-3 animate-in fade-in">
-                <ShieldAlert className="w-6 h-6 text-rose-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-bold text-sm text-rose-100">Atención</h4>
-                  <p className="text-xs sm:text-sm mt-0.5">{identError}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Opciones de Identificación */}
-            <div className="space-y-6">
-              {/* Botón Escanear QR */}
-              <button
-                type="button"
-                onClick={() => setIsQrModalOpen(true)}
-                className="w-full py-5 px-6 rounded-2xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-black text-lg sm:text-xl shadow-xl hover:shadow-sky-500/20 transition-all flex items-center justify-center gap-3 cursor-pointer group"
-              >
-                <Camera className="w-7 h-7 group-hover:scale-110 transition-transform" />
-                <span>Escanear QR de Carnet</span>
-              </button>
-
-              <div className="relative flex py-2 items-center">
-                <div className={`flex-grow border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}></div>
-                <span className={`flex-shrink mx-4 text-xs font-bold uppercase tracking-widest ${
-                  isDark ? 'text-slate-500' : 'text-slate-400'
+          <div className="w-full max-w-7xl space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+              {/* Columna Izquierda / Panel de Identificación */}
+              <div className="lg:col-span-5 w-full">
+                <div className={`w-full rounded-3xl p-6 sm:p-8 shadow-2xl border ${
+                  isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
                 }`}>
-                  O escribe tu código ID
-                </span>
-                <div className={`flex-grow border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}></div>
+                  <div className="text-center space-y-2 mb-6">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-sky-500/20 text-sky-500 border border-sky-500/30 uppercase tracking-widest">
+                      <Sparkles className="w-3.5 h-3.5" /> Identificación del Votante
+                    </span>
+                    <h2 className={`text-2xl sm:text-3xl font-black tracking-tight ${
+                      isDark ? 'text-white' : 'text-slate-900'
+                    }`}>
+                      Bienvenido a la Votación
+                    </h2>
+                    <p className={`text-xs sm:text-sm max-w-md mx-auto ${
+                      isDark ? 'text-slate-400' : 'text-slate-600'
+                    }`}>
+                      Escanea el código QR de tu carnet estudiantil o escribe tu código ID para votar.
+                    </p>
+                  </div>
+
+                  {/* Mensaje de Error si ya votó o código no existe */}
+                  {identError && (
+                    <div className="mb-6 p-4 rounded-2xl bg-rose-950/80 border-2 border-rose-500/50 text-rose-200 flex items-start gap-3 animate-in fade-in">
+                      <ShieldAlert className="w-6 h-6 text-rose-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="font-bold text-sm text-rose-100">Atención</h4>
+                        <p className="text-xs sm:text-sm mt-0.5">{identError}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Opciones de Identificación */}
+                  <div className="space-y-5">
+                    {/* Botón Escanear QR */}
+                    <button
+                      type="button"
+                      onClick={() => setIsQrModalOpen(true)}
+                      className="w-full py-4 sm:py-5 px-6 rounded-2xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-black text-base sm:text-lg shadow-xl hover:shadow-sky-500/20 transition-all flex items-center justify-center gap-3 cursor-pointer group"
+                    >
+                      <Camera className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                      <span>Escanear QR de Carnet</span>
+                    </button>
+
+                    <div className="relative flex py-1 items-center">
+                      <div className={`flex-grow border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}></div>
+                      <span className={`flex-shrink mx-4 text-xs font-bold uppercase tracking-widest ${
+                        isDark ? 'text-slate-500' : 'text-slate-400'
+                      }`}>
+                        O escribe tu código ID
+                      </span>
+                      <div className={`flex-grow border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}></div>
+                    </div>
+
+                    {/* Input Código Manual */}
+                    <div className="space-y-4">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={studentCodeInput}
+                          onChange={e => setStudentCodeInput(e.target.value.toUpperCase())}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleIdentify();
+                          }}
+                          placeholder="Ej. 5306, 5729, 5732..."
+                          className={`w-full text-center text-2xl sm:text-3xl font-mono font-bold tracking-widest py-3.5 px-4 border-2 rounded-2xl focus:outline-none focus:ring-4 transition-all uppercase ${
+                            isDark
+                              ? 'bg-slate-950 border-slate-700 text-white placeholder:text-slate-600 focus:border-sky-500 focus:ring-sky-500/20'
+                              : 'bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:ring-sky-500/20'
+                          }`}
+                          autoFocus
+                        />
+                        {studentCodeInput && (
+                          <button
+                            onClick={handleKeypadClear}
+                            className={`absolute right-4 top-1/2 -translate-y-1/2 p-2 ${
+                              isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-700'
+                            }`}
+                            title="Limpiar"
+                          >
+                            <Delete className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Teclado Táctil en Pantalla */}
+                      <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto">
+                        {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map(key => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => {
+                              if (key === 'C') handleKeypadClear();
+                              else if (key === '⌫') handleKeypadBackspace();
+                              else handleKeypadPress(key);
+                            }}
+                            className={`py-3 sm:py-3.5 rounded-xl active:scale-95 font-mono font-bold text-base sm:text-lg border shadow-sm transition-all flex items-center justify-center cursor-pointer ${
+                              isDark
+                                ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700/60'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-900 border-slate-300'
+                            }`}
+                          >
+                            {key}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Botón Ingresar */}
+                      <button
+                        type="button"
+                        disabled={identifying || !studentCodeInput.trim()}
+                        onClick={() => handleIdentify()}
+                        className="w-full py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-black text-base sm:text-lg shadow-lg hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {identifying ? (
+                          <span>Verificando Identidad...</span>
+                        ) : (
+                          <>
+                            <UserCheck className="w-5 h-5" />
+                            <span>Ingresar a Votar</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Input Código Manual */}
-              <div className="space-y-4">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={studentCodeInput}
-                    onChange={e => setStudentCodeInput(e.target.value.toUpperCase())}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') handleIdentify();
-                    }}
-                    placeholder="Ej. 5306, 5729, 5732..."
-                    className={`w-full text-center text-2xl sm:text-3xl font-mono font-bold tracking-widest py-4 px-4 border-2 rounded-2xl focus:outline-none focus:ring-4 transition-all uppercase ${
-                      isDark
-                        ? 'bg-slate-950 border-slate-700 text-white placeholder:text-slate-600 focus:border-sky-500 focus:ring-sky-500/20'
-                        : 'bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-sky-600 focus:ring-sky-500/20'
-                    }`}
-                    autoFocus
-                  />
-                  {studentCodeInput && (
-                    <button
-                      onClick={handleKeypadClear}
-                      className={`absolute right-4 top-1/2 -translate-y-1/2 p-2 ${
-                        isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-700'
-                      }`}
-                      title="Limpiar"
-                    >
-                      <Delete className="w-6 h-6" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Teclado Táctil en Pantalla */}
-                <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-sm mx-auto pt-2">
-                  {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'].map(key => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => {
-                        if (key === 'C') handleKeypadClear();
-                        else if (key === '⌫') handleKeypadBackspace();
-                        else handleKeypadPress(key);
-                      }}
-                      className={`py-3.5 sm:py-4 rounded-xl active:scale-95 font-mono font-bold text-lg sm:text-xl border shadow-sm transition-all flex items-center justify-center cursor-pointer ${
-                        isDark
-                          ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700/60'
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-900 border-slate-300'
-                      }`}
-                    >
-                      {key}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Botón Ingresar */}
-                <button
-                  type="button"
-                  disabled={identifying || !studentCodeInput.trim()}
-                  onClick={() => handleIdentify()}
-                  className="w-full py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-black text-lg shadow-lg hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {identifying ? (
-                    <span>Verificando Identidad...</span>
-                  ) : (
-                    <>
-                      <UserCheck className="w-6 h-6" />
-                      <span>Ingresar a Votar</span>
-                    </>
-                  )}
-                </button>
+              {/* Columna Derecha / Muestra Visual de Candidatos */}
+              <div className="lg:col-span-7 w-full">
+                <CandidatesDisplay electionId={election?.id} />
               </div>
             </div>
           </div>

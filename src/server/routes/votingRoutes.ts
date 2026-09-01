@@ -56,6 +56,37 @@ router.get('/active-election', async (req, res) => {
 });
 
 /**
+ * GET /api/v1/voting/candidates
+ * Retorna los candidatos oficiales activos de la elección actual desde la base de datos
+ */
+router.get('/candidates', async (req, res) => {
+  try {
+    const electionId = req.query.election_id as string;
+    let election = null;
+    if (electionId) {
+      election = await electionRepo.findById(electionId);
+    } else {
+      election = await electionRepo.findActive();
+    }
+
+    if (!election) {
+      res.json({ success: true, candidates: [] });
+      return;
+    }
+
+    const candidates = await candidateRepo.findByElectionId(election.id);
+    res.json({
+      success: true,
+      election,
+      candidates
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Error al obtener los candidatos';
+    res.status(500).json({ success: false, message: msg });
+  }
+});
+
+/**
  * POST /api/v1/voting/identify
  * Identifica al estudiante por código manual o lectura de QR
  */

@@ -84,6 +84,7 @@ export interface IVoteRepository {
 export interface IAuditRepository {
   create(log: Omit<AuditLog, 'id' | 'created_at'>): Promise<void>;
   findAll(limit?: number): Promise<AuditLog[]>;
+  getVoteFlow(): Promise<Array<{time: string, votes: number}>>;
 }
 
 export interface ISettingsRepository {

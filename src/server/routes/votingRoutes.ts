@@ -4,6 +4,7 @@ import { ElectionRepository } from '../repositories/electionRepository.js';
 import { SettingsRepository } from '../repositories/settingsRepository.js';
 import { StudentRepository } from '../repositories/studentRepository.js';
 import { VoteRepository } from '../repositories/voteRepository.js';
+import { AuditRepository } from '../repositories/auditRepository.js';
 import { VotingService } from '../services/votingService.js';
 import { CastVoteRequest, IdentifyStudentRequest } from '../../shared/types.js';
 
@@ -14,6 +15,7 @@ const candidateRepo = new CandidateRepository();
 const studentRepo = new StudentRepository();
 const voteRepo = new VoteRepository();
 const settingsRepo = new SettingsRepository();
+const auditRepo = new AuditRepository();
 
 const votingService = new VotingService(electionRepo, candidateRepo, studentRepo, voteRepo);
 
@@ -108,9 +110,24 @@ router.post('/identify', async (req, res) => {
     });
 
     if (!result.success) {
+      await auditRepo.create({
+        user_id: null,
+        username: 'SISTEMA',
+        action: 'INTENTO_IDENTIFICACION_FALLIDO',
+        details: `Intento fallido de identificación: ${result.message}`,
+        ip_address: clientIp
+      });
       res.status(400).json(result);
       return;
     }
+
+    await auditRepo.create({
+      user_id: null,
+      username: 'SISTEMA',
+      action: 'VOTANTE_IDENTIFICADO',
+      details: `Un estudiante de grado ${result.student?.grade || 'N/A'}, curso ${result.student?.course || 'N/A'} se ha identificado exitosamente para votar en la estación ${body.station_id || req.ip || 'station-1'}.`,
+      ip_address: clientIp
+    });
 
     res.json(result);
   } catch (err: unknown) {
@@ -134,9 +151,24 @@ router.post('/cast', async (req, res) => {
     });
 
     if (!result.success) {
+      await auditRepo.create({
+        user_id: null,
+        username: 'SISTEMA',
+        action: 'VOTO_RECHAZADO',
+        details: `Voto rechazado en la estación ${body.station_id || req.ip || 'station-1'}: ${result.message}`,
+        ip_address: getClientIp(req)
+      });
       res.status(400).json(result);
       return;
     }
+
+    await auditRepo.create({
+      user_id: null,
+      username: 'SISTEMA',
+      action: 'VOTO_EMITIDO',
+      details: `Voto emitido y registrado exitosamente en la estación ${body.station_id || req.ip || 'station-1'}. (Identidad y elección del votante mantenidas en secreto).`,
+      ip_address: getClientIp(req)
+    });
 
     res.json(result);
   } catch (err: unknown) {

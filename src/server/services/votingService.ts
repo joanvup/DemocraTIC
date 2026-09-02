@@ -1,16 +1,21 @@
 import crypto from 'crypto';
 import { ICandidateRepository, IElectionRepository, IStudentRepository, IVoteRepository } from '../repositories/interfaces.js';
+import { AuditRepository } from '../repositories/auditRepository.js';
 import { QrCryptoService } from './qrCryptoService.js';
 import { sseBroadcast } from './sseBroadcastService.js';
 import { ElectionStats, IdentifyStudentResponse } from '../../shared/types.js';
 
 export class VotingService {
+  private auditRepo: AuditRepository;
+
   constructor(
     private electionRepo: IElectionRepository,
     private candidateRepo: ICandidateRepository,
     private studentRepo: IStudentRepository,
     private voteRepo: IVoteRepository
-  ) {}
+  ) {
+    this.auditRepo = new AuditRepository();
+  }
 
   /**
    * Identifica y autoriza a un estudiante para votar (por código manual o QR)
@@ -294,7 +299,8 @@ export class VotingService {
       participation_percentage: participationPercentage,
       results: candidateResults,
       participation_by_course: participationByCourse,
-      votes_timeline: timeline
+      votes_timeline: timeline,
+      flow: await this.auditRepo.getVoteFlow()
     };
   }
 

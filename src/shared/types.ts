@@ -136,6 +136,10 @@ export interface ElectionStats {
   total_votes_cast: number;
   total_pending_students: number;
   participation_percentage: number;
+  flow?: Array<{
+    time: string;
+    votes: number;
+  }>;
   results: Array<{
     candidate_id: string | null;
     candidate_name: string;

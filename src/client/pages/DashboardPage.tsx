@@ -18,6 +18,8 @@ import { CandidateModal } from '../components/admin/CandidateModal.js';
 import { ElectionModal } from '../components/admin/ElectionModal.js';
 import { ChangePasswordModal } from '../components/admin/ChangePasswordModal.js';
 import { generateActaPDF } from '../utils/pdfReportService.js';
+import { ElectionCountdown } from '../components/admin/ElectionCountdown.js';
+import { ElectionCharts } from '../components/charts/ElectionCharts.js';
 import {
   BarChart3,
   Calendar,
@@ -623,7 +625,9 @@ export function DashboardPage({
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
+              <ElectionCountdown election={currentElection} />
+              
               <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
                 <span className="text-xs font-bold text-slate-500 uppercase">Habilitados</span>
                 <p className="text-3xl font-black text-slate-900 font-mono mt-1">
@@ -661,6 +665,8 @@ export function DashboardPage({
                 </div>
               </div>
             </div>
+
+            <ElectionCharts stats={stats} isDark={false} />
 
             {/* Gráficos de Resultados y Participación */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

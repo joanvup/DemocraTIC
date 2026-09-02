@@ -18,6 +18,7 @@ import {
   Users,
   Vote
 } from 'lucide-react';
+import { ElectionCharts } from '../components/charts/ElectionCharts.js';
 
 export function PublicResultsPage({ onBack }: { onBack: () => void }) {
   const { isDark, toggleTheme } = useTheme();
@@ -249,6 +250,8 @@ export function PublicResultsPage({ onBack }: { onBack: () => void }) {
               </div>
             </div>
           </div>
+
+          <ElectionCharts stats={stats} isDark={isDark} />
 
           {/* Ganador Proyectado si está cerrado */}
           {isFinished && winner && (

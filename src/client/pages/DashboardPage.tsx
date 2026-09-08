@@ -1388,7 +1388,7 @@ export function DashboardPage({
                   <span>Máquinas de Votación</span>
                   {machineAudit && (
                     <span className="bg-sky-100 text-sky-800 text-[10px] font-black px-2 py-0.5 rounded-full">
-                      {machineAudit.summary.unique_stations}
+                      {machineAudit.unique_machines ?? 0}
                     </span>
                   )}
                 </button>
@@ -1424,7 +1424,7 @@ export function DashboardPage({
                       </div>
                     </div>
                     <div className="text-2xl font-black text-slate-900">
-                      {machineAudit?.summary.unique_stations ?? 0}
+                      {machineAudit?.unique_machines ?? 0}
                     </div>
                     <p className="text-[11px] text-slate-400 mt-1">Terminales / PCs utilizados</p>
                   </div>
@@ -1437,7 +1437,7 @@ export function DashboardPage({
                       </div>
                     </div>
                     <div className="text-2xl font-black text-slate-900">
-                      {machineAudit?.summary.total_logged_votes ?? 0}
+                      {machineAudit?.total_votes ?? 0}
                     </div>
                     <p className="text-[11px] text-slate-400 mt-1">Votos con huella técnica</p>
                   </div>
@@ -1450,7 +1450,7 @@ export function DashboardPage({
                       </div>
                     </div>
                     <div className="text-2xl font-black text-slate-900">
-                      {machineAudit?.summary.unique_ips ?? 0}
+                      {machineAudit?.unique_ips ?? 0}
                     </div>
                     <p className="text-[11px] text-slate-400 mt-1">Redes / conexiones escolares</p>
                   </div>
@@ -1463,8 +1463,8 @@ export function DashboardPage({
                       </div>
                     </div>
                     <div className="text-2xl font-black text-slate-900">
-                      {machineAudit && machineAudit.summary.unique_stations > 0
-                        ? (machineAudit.summary.total_logged_votes / machineAudit.summary.unique_stations).toFixed(1)
+                      {machineAudit && (machineAudit.unique_machines ?? 0) > 0
+                        ? ((machineAudit.total_votes ?? 0) / machineAudit.unique_machines).toFixed(1)
                         : '0'}
                     </div>
                     <p className="text-[11px] text-slate-400 mt-1">Carga media por estación</p>
@@ -1527,7 +1527,7 @@ export function DashboardPage({
                       <p className="text-[11px] text-slate-400">Detalle de cada máquina donde se realizaron votaciones</p>
                     </div>
                     <span className="text-xs font-mono font-bold text-slate-500">
-                      {machineAudit?.station_stats.length || 0} máquinas
+                      {machineAudit?.machines?.length || 0} máquinas
                     </span>
                   </div>
 
@@ -1545,7 +1545,7 @@ export function DashboardPage({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                        {(!machineAudit?.station_stats || machineAudit.station_stats.length === 0) ? (
+                        {(!machineAudit?.machines || machineAudit.machines.length === 0) ? (
                           <tr>
                             <td colSpan={7} className="py-8 text-center text-slate-400">
                               <Monitor className="w-8 h-8 text-slate-300 mx-auto mb-2" />
@@ -1556,7 +1556,7 @@ export function DashboardPage({
                             </td>
                           </tr>
                         ) : (
-                          machineAudit.station_stats
+                          machineAudit.machines
                             .filter(st => {
                               if (!machineSearch.trim()) return true;
                               const q = machineSearch.toLowerCase();
@@ -1565,12 +1565,12 @@ export function DashboardPage({
                                 st.ip_address.toLowerCase().includes(q) ||
                                 st.device_type.toLowerCase().includes(q) ||
                                 st.os_name.toLowerCase().includes(q) ||
-                                st.courses_used.some(c => c.toLowerCase().includes(q))
+                                (st.courses || []).some(c => c.toLowerCase().includes(q))
                               );
                             })
                             .map((st) => {
-                              const totalVotes = machineAudit.summary.total_logged_votes || 1;
-                              const pct = Math.round((st.vote_count / totalVotes) * 100);
+                              const totalVotes = machineAudit.total_votes || 1;
+                              const pct = Math.round((st.total_votes / totalVotes) * 100);
                               return (
                                 <tr key={st.station_id} className="hover:bg-slate-50/80 transition-colors">
                                   <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
@@ -1597,7 +1597,7 @@ export function DashboardPage({
                                   </td>
                                   <td className="py-3.5 px-4">
                                     <div className="flex flex-wrap gap-1 max-w-xs">
-                                      {st.courses_used.slice(0, 6).map((crs) => (
+                                      {(st.courses || []).slice(0, 6).map((crs) => (
                                         <span
                                           key={crs}
                                           className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-50 text-sky-700 border border-sky-100"
@@ -1605,16 +1605,16 @@ export function DashboardPage({
                                           {crs}
                                         </span>
                                       ))}
-                                      {st.courses_used.length > 6 && (
+                                      {(st.courses || []).length > 6 && (
                                         <span className="text-[10px] text-slate-400 font-bold self-center">
-                                          +{st.courses_used.length - 6} más
+                                          +{(st.courses || []).length - 6} más
                                         </span>
                                       )}
                                     </div>
                                   </td>
                                   <td className="py-3.5 px-4 text-center">
                                     <div className="inline-flex flex-col items-center">
-                                      <span className="font-black text-slate-900 text-sm">{st.vote_count}</span>
+                                      <span className="font-black text-slate-900 text-sm">{st.total_votes}</span>
                                       <span className="text-[10px] text-slate-400 font-medium">({pct}%)</span>
                                     </div>
                                   </td>
@@ -1639,7 +1639,7 @@ export function DashboardPage({
                       <p className="text-[11px] text-slate-400">Últimos eventos registrados en las urnas electrónicas</p>
                     </div>
                     <span className="text-xs font-mono text-slate-400">
-                      Mostrando {machineAudit?.logs.length || 0} registros
+                      Mostrando {machineAudit?.recent_logs?.length || 0} registros
                     </span>
                   </div>
 
@@ -1657,23 +1657,23 @@ export function DashboardPage({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                        {(!machineAudit?.logs || machineAudit.logs.length === 0) ? (
+                        {(!machineAudit?.recent_logs || machineAudit.recent_logs.length === 0) ? (
                           <tr>
                             <td colSpan={7} className="py-6 text-center text-slate-400">
                               Sin registros aún.
                             </td>
                           </tr>
                         ) : (
-                          machineAudit.logs
+                          machineAudit.recent_logs
                             .filter(log => {
                               if (!machineSearch.trim()) return true;
                               const q = machineSearch.toLowerCase();
                               return (
                                 log.station_id.toLowerCase().includes(q) ||
                                 log.ip_address.toLowerCase().includes(q) ||
-                                log.student_course.toLowerCase().includes(q) ||
-                                log.os_name.toLowerCase().includes(q) ||
-                                log.browser_name.toLowerCase().includes(q)
+                                (log.student_course || '').toLowerCase().includes(q) ||
+                                (log.os_name || '').toLowerCase().includes(q) ||
+                                (log.browser_name || '').toLowerCase().includes(q)
                               );
                             })
                             .map(log => (
@@ -1689,17 +1689,17 @@ export function DashboardPage({
                                 </td>
                                 <td className="py-2.5 px-4">
                                   <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-100">
-                                    {log.student_course}
+                                    {log.student_course || 'N/A'}
                                   </span>
                                 </td>
                                 <td className="py-2.5 px-4 text-slate-600">
-                                  {log.device_type}
+                                  {log.device_type || 'Desktop'}
                                 </td>
                                 <td className="py-2.5 px-4 text-slate-600">
-                                  <span>{log.os_name}</span> • <span className="text-slate-400">{log.browser_name}</span>
+                                  <span>{log.os_name || 'SO'}</span> • <span className="text-slate-400">{log.browser_name || 'Navegador'}</span>
                                 </td>
                                 <td className="py-2.5 px-4 font-mono text-[10px] text-slate-400">
-                                  {log.screen_resolution}
+                                  {log.screen_resolution || 'N/A'}
                                 </td>
                               </tr>
                             ))

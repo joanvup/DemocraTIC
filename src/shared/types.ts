@@ -123,12 +123,50 @@ export interface CastVoteRequest {
   candidate_id?: string | null;
   is_blank?: boolean;
   station_id?: string;
+  device_type?: string;
+  os_name?: string;
+  browser_name?: string;
+  screen_resolution?: string;
 }
 
 export interface CastVoteResponse {
   success: boolean;
   message: string;
   receipt_id?: string; // Código de confirmación anónimo para el votante
+}
+
+export interface MachineVotingLog {
+  id: string;
+  election_id: string;
+  station_id: string;
+  ip_address: string;
+  device_type?: string;
+  os_name?: string;
+  browser_name?: string;
+  screen_resolution?: string;
+  student_course?: string;
+  voted_at: string;
+  user_agent?: string;
+}
+
+export interface MachineStat {
+  station_id: string;
+  ip_address: string;
+  device_type: string;
+  os_name: string;
+  browser_name: string;
+  total_votes: number;
+  first_vote_at: string;
+  last_vote_at: string;
+  courses: string[];
+}
+
+export interface MachineAuditSummary {
+  total_votes: number;
+  unique_machines: number;
+  unique_ips: number;
+  machines: MachineStat[];
+  recent_logs: MachineVotingLog[];
 }
 
 // DTOs para Métricas y Dashboard

@@ -143,11 +143,20 @@ router.post('/identify', async (req, res) => {
 router.post('/cast', async (req, res) => {
   try {
     const body = req.body as CastVoteRequest;
+    const clientIp = getClientIp(req);
+    const userAgent = req.headers['user-agent'] || '';
+
     const result = await votingService.castVote({
       votingToken: body.voting_token,
       candidateId: body.candidate_id,
       isBlank: body.is_blank,
-      stationId: body.station_id || req.ip || 'station-1'
+      stationId: body.station_id || `EQ-${clientIp.replace(/[^a-zA-Z0-9]/g, '') || 'Kiosko'}`,
+      ipAddress: clientIp,
+      deviceType: body.device_type,
+      osName: body.os_name,
+      browserName: body.browser_name,
+      screenResolution: body.screen_resolution,
+      userAgent: typeof userAgent === 'string' ? userAgent : ''
     });
 
     if (!result.success) {
@@ -155,8 +164,8 @@ router.post('/cast', async (req, res) => {
         user_id: null,
         username: 'SISTEMA',
         action: 'VOTO_RECHAZADO',
-        details: `Voto rechazado en la estación ${body.station_id || req.ip || 'station-1'}: ${result.message}`,
-        ip_address: getClientIp(req)
+        details: `Voto rechazado en la estación ${body.station_id || clientIp}: ${result.message}`,
+        ip_address: clientIp
       });
       res.status(400).json(result);
       return;
@@ -166,8 +175,8 @@ router.post('/cast', async (req, res) => {
       user_id: null,
       username: 'SISTEMA',
       action: 'VOTO_EMITIDO',
-      details: `Voto emitido y registrado exitosamente en la estación ${body.station_id || req.ip || 'station-1'}. (Identidad y elección del votante mantenidas en secreto).`,
-      ip_address: getClientIp(req)
+      details: `Voto emitido y registrado exitosamente en la estación ${body.station_id || clientIp} (${body.os_name || 'OS'} / ${body.browser_name || 'Web'}). Identidad y opción de voto protegidas bajo secreto democrático.`,
+      ip_address: clientIp
     });
 
     res.json(result);

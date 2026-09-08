@@ -168,5 +168,35 @@ export async function runMigrations(): Promise<void> {
     // Ignored in SQLite or if unsupported
   }
 
+  // 10. Machine Voting Logs Table (Auditoría de Equipos y Máquinas de Votación)
+  await executeRun(`
+    CREATE TABLE IF NOT EXISTS machine_voting_logs (
+      id VARCHAR(36) PRIMARY KEY,
+      election_id VARCHAR(36) NOT NULL,
+      station_id VARCHAR(100) NOT NULL,
+      ip_address VARCHAR(45) NOT NULL,
+      device_type VARCHAR(50),
+      os_name VARCHAR(100),
+      browser_name VARCHAR(100),
+      screen_resolution VARCHAR(50),
+      student_course VARCHAR(50),
+      voted_at VARCHAR(30) NOT NULL,
+      user_agent TEXT,
+      FOREIGN KEY (election_id) REFERENCES elections(id) ON DELETE CASCADE
+    );
+  `);
+
+  try {
+    await executeRun(`CREATE INDEX IF NOT EXISTS idx_machine_logs_station ON machine_voting_logs(station_id);`);
+  } catch (e) {
+    // Ignore if index already exists
+  }
+
+  try {
+    await executeRun(`CREATE INDEX IF NOT EXISTS idx_machine_logs_election ON machine_voting_logs(election_id);`);
+  } catch (e) {
+    // Ignore if index already exists
+  }
+
   console.log('[MIGRATIONS] Migrations completed successfully.');
 }

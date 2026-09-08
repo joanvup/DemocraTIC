@@ -7,6 +7,7 @@ import { SettingsRepository } from '../repositories/settingsRepository.js';
 import { StudentRepository } from '../repositories/studentRepository.js';
 import { UserRepository } from '../repositories/userRepository.js';
 import { VoteRepository } from '../repositories/voteRepository.js';
+import { MachineLogRepository } from '../repositories/machineLogRepository.js';
 import { AuthService } from '../services/authService.js';
 import { ExcelImportService } from '../services/excelImportService.js';
 import { QrCryptoService } from '../services/qrCryptoService.js';
@@ -22,6 +23,7 @@ const studentRepo = new StudentRepository();
 const voteRepo = new VoteRepository();
 const auditRepo = new AuditRepository();
 const settingsRepo = new SettingsRepository();
+const machineLogRepo = new MachineLogRepository();
 
 const authService = new AuthService(userRepo);
 const votingService = new VotingService(electionRepo, candidateRepo, studentRepo, voteRepo);
@@ -443,6 +445,75 @@ router.get('/audit-logs', requireAuth(['SUPERADMIN']), async (req, res) => {
     res.json({ success: true, logs });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Error al consultar logs';
+    res.status(500).json({ success: false, message: msg });
+  }
+});
+
+/**
+ * GET /api/v1/admin/machine-audit
+ * Resumen y auditoría de máquinas/equipos desde donde se vota
+ */
+router.get('/machine-audit', requireAuth(['SUPERADMIN', 'ADMIN_ELECTORAL']), async (req, res) => {
+  try {
+    const electionId = typeof req.query.election_id === 'string' ? req.query.election_id : undefined;
+    const summary = await machineLogRepo.getSummary(electionId);
+    res.json({ success: true, summary });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Error al obtener auditoría de máquinas';
+    res.status(500).json({ success: false, message: msg });
+  }
+});
+
+/**
+ * GET /api/v1/admin/machine-audit/export
+ * Exporta el reporte de máquinas y trazabilidad técnica en Excel
+ */
+router.get('/machine-audit/export', requireAuth(['SUPERADMIN', 'ADMIN_ELECTORAL']), async (req, res) => {
+  try {
+    const electionId = typeof req.query.election_id === 'string' ? req.query.election_id : undefined;
+    const summary = await machineLogRepo.getSummary(electionId);
+
+    const wb = XLSX.utils.book_new();
+
+    // Hoja 1: Resumen por Equipo / Máquina
+    const machinesData = summary.machines.map((m, idx) => ({
+      '#': idx + 1,
+      'ID de Estación / Máquina': m.station_id,
+      'Dirección IP': m.ip_address,
+      'Tipo de Dispositivo': m.device_type,
+      'Sistema Operativo': m.os_name,
+      'Navegador Web': m.browser_name,
+      'Total Votos Registrados': m.total_votes,
+      'Cursos que Votaron': m.courses.join(', ') || 'N/A',
+      'Primer Voto': m.first_vote_at,
+      'Último Voto': m.last_vote_at
+    }));
+    const wsMachines = XLSX.utils.json_to_sheet(machinesData);
+    XLSX.utils.book_append_sheet(wb, wsMachines, 'Equipos de Votación');
+
+    // Hoja 2: Registro Detallado de Votaciones por Turno
+    const logsData = summary.recent_logs.map((l, idx) => ({
+      '#': idx + 1,
+      'Fecha y Hora': l.voted_at,
+      'ID de Estación': l.station_id,
+      'Dirección IP': l.ip_address,
+      'Curso del Estudiante': l.student_course || 'No especificado',
+      'Dispositivo': l.device_type || 'Desktop',
+      'Sistema Operativo': l.os_name || 'Desconocido',
+      'Navegador': l.browser_name || 'Web',
+      'Resolución Pantalla': l.screen_resolution || 'N/A'
+    }));
+    const wsLogs = XLSX.utils.json_to_sheet(logsData);
+    XLSX.utils.book_append_sheet(wb, wsLogs, 'Registro Cronológico');
+
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const filename = `Auditoria_Equipos_Votacion_${Date.now()}.xlsx`;
+
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Error al exportar auditoría de máquinas';
     res.status(500).json({ success: false, message: msg });
   }
 });

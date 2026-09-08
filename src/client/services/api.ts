@@ -6,6 +6,7 @@ import {
   ElectionStats,
   IdentifyStudentRequest,
   IdentifyStudentResponse,
+  MachineAuditSummary,
   SchoolSettings,
   Student,
   User
@@ -154,6 +155,9 @@ export const adminApi = {
   // Estadísticas & Auditoría
   getStats: (electionId: string) => fetchJson<{ success: boolean; stats: ElectionStats }>(`/api/v1/admin/stats/${electionId}`),
   getAuditLogs: (limit = 100) => fetchJson<{ success: boolean; logs: Array<{ id: string; user_id: string | null; username: string; action: string; details: string; ip_address: string; created_at: string }> }>(`/api/v1/admin/audit-logs?limit=${limit}`),
+  getMachineAudit: (electionId?: string) => fetchJson<{ success: boolean; summary: MachineAuditSummary }>(
+    `/api/v1/admin/machine-audit${electionId ? `?election_id=${electionId}` : ''}`
+  ),
   getSettings: () => fetchJson<{ success: boolean; settings: SchoolSettings }>('/api/v1/admin/settings'),
   updateSettings: (settings: Partial<SchoolSettings>) => fetchJson<{ success: boolean; settings: SchoolSettings }>('/api/v1/admin/settings', {
     method: 'PUT',

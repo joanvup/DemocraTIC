@@ -6,6 +6,7 @@ import {
   Candidate,
   Election,
   ElectionStats,
+  MachineAuditSummary,
   SchoolSettings,
   Student,
   User
@@ -40,6 +41,7 @@ import {
   Search,
   Settings as SettingsIcon,
   Shield,
+  ShieldCheck,
   Trash2,
   Upload,
   UserCheck,
@@ -48,8 +50,15 @@ import {
   ExternalLink,
   Lock,
   Edit3,
-  Image as ImageIcon
-, ShieldAlert } from 'lucide-react';
+  Image as ImageIcon,
+  ShieldAlert,
+  Cpu,
+  Laptop,
+  Monitor,
+  Network,
+  Smartphone,
+  Tablet
+} from 'lucide-react';
 
 type AdminTab = 'DASHBOARD' | 'ELECTIONS' | 'CANDIDATES' | 'STUDENTS' | 'IMPORT' | 'REPORTS' | 'AUDIT' | 'SETTINGS';
 
@@ -72,6 +81,10 @@ export function DashboardPage({
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [students, setStudents] = useState<Array<Student & { has_voted: boolean; voted_at?: string; signed_qr_payload: string }>>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [machineAudit, setMachineAudit] = useState<MachineAuditSummary | null>(null);
+  const [auditSubTab, setAuditSubTab] = useState<'MACHINES' | 'SYSTEM'>('MACHINES');
+  const [loadingMachineAudit, setLoadingMachineAudit] = useState(false);
+  const [machineSearch, setMachineSearch] = useState('');
   const [settings, setSettings] = useState<SchoolSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -228,11 +241,31 @@ export function DashboardPage({
     }
   }, [user]);
 
+  // Cargar Auditoría de Máquinas y Equipos
+  const loadMachineAudit = useCallback(async () => {
+    if (!user) return;
+    try {
+      setLoadingMachineAudit(true);
+      const res = await adminApi.getMachineAudit(selectedElectionId || undefined);
+      if (res.success) {
+        setMachineAudit(res.summary);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes('no autorizado') && !msg.includes('401')) {
+        console.error('Error cargando auditoría de máquinas:', err);
+      }
+    } finally {
+      setLoadingMachineAudit(false);
+    }
+  }, [user, selectedElectionId]);
+
   useEffect(() => {
     if (user && activeTab === 'AUDIT') {
       loadAuditLogs();
+      loadMachineAudit();
     }
-  }, [user, activeTab, loadAuditLogs]);
+  }, [user, activeTab, loadAuditLogs, loadMachineAudit]);
 
   // Cambiar Estado de Elección (Abrir / Cerrar)
   const handleUpdateElectionStatus = async (id: string, newStatus: Election['status']) => {
@@ -1325,43 +1358,413 @@ export function DashboardPage({
         )}
 
         {/* ===================================================================
-           PESTAÑA 7: AUDITORÍA DEL SISTEMA
+           PESTAÑA 7: AUDITORÍA Y REGISTRO DE MÁQUINAS DE VOTACIÓN
            =================================================================== */}
         {activeTab === 'AUDIT' && (
           <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-black text-slate-900">Registro de Auditoría y Trazabilidad</h2>
-              <p className="text-xs text-slate-500">Historial inmutable de acciones administrativas (los votos individuales nunca se registran por secreto de voto).</p>
-            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-black text-slate-900 flex items-center gap-2.5">
+                  <ShieldCheck className="w-6 h-6 text-sky-600" />
+                  Auditoría y Registro de Máquinas
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Control y trazabilidad de los equipos, direcciones IP y navegadores desde donde los estudiantes emiten sus votos.
+                </p>
+              </div>
 
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-900 text-white font-bold uppercase tracking-wider text-[11px]">
-                    <tr>
-                      <th className="py-3 px-4">Fecha y Hora</th>
-                      <th className="py-3 px-4">Usuario</th>
-                      <th className="py-3 px-4">Acción</th>
-                      <th className="py-3 px-4">Detalles</th>
-                      <th className="py-3 px-4">IP</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                    {auditLogs.map(log => (
-                      <tr key={log.id} className="hover:bg-slate-50">
-                        <td className="py-3 px-4 font-mono text-[11px] text-slate-500">
-                          {new Date(log.created_at).toLocaleString()}
-                        </td>
-                        <td className="py-3 px-4 font-bold text-slate-900">{log.username}</td>
-                        <td className="py-3 px-4 font-mono font-bold text-sky-800">{log.action}</td>
-                        <td className="py-3 px-4 text-slate-600">{log.details}</td>
-                        <td className="py-3 px-4 font-mono text-[11px] text-slate-400">{log.ip_address}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              {/* Subpestañas */}
+              <div className="flex items-center gap-1 bg-slate-200/80 p-1 rounded-2xl text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setAuditSubTab('MACHINES')}
+                  className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+                    auditSubTab === 'MACHINES'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Monitor className="w-4 h-4 text-sky-600" />
+                  <span>Máquinas de Votación</span>
+                  {machineAudit && (
+                    <span className="bg-sky-100 text-sky-800 text-[10px] font-black px-2 py-0.5 rounded-full">
+                      {machineAudit.summary.unique_stations}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setAuditSubTab('SYSTEM')}
+                  className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+                    auditSubTab === 'SYSTEM'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <History className="w-4 h-4 text-slate-600" />
+                  <span>Acciones de Sistema</span>
+                  <span className="bg-slate-300 text-slate-800 text-[10px] font-black px-2 py-0.5 rounded-full">
+                    {auditLogs.length}
+                  </span>
+                </button>
               </div>
             </div>
+
+            {/* VISTA 1: AUDITORÍA DE MÁQUINAS Y EQUIPOS */}
+            {auditSubTab === 'MACHINES' && (
+              <div className="space-y-6">
+                {/* 1. Tarjetas Resumen de Máquinas */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-500">Equipos Registrados</span>
+                      <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
+                        <Monitor className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <div className="text-2xl font-black text-slate-900">
+                      {machineAudit?.summary.unique_stations ?? 0}
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1">Terminales / PCs utilizados</p>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-500">Votos Auditados</span>
+                      <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <Vote className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <div className="text-2xl font-black text-slate-900">
+                      {machineAudit?.summary.total_logged_votes ?? 0}
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1">Votos con huella técnica</p>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-500">Direcciones IP</span>
+                      <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <Network className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <div className="text-2xl font-black text-slate-900">
+                      {machineAudit?.summary.unique_ips ?? 0}
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1">Redes / conexiones escolares</p>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-500">Promedio Votos/PC</span>
+                      <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                        <Cpu className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <div className="text-2xl font-black text-slate-900">
+                      {machineAudit && machineAudit.summary.unique_stations > 0
+                        ? (machineAudit.summary.total_logged_votes / machineAudit.summary.unique_stations).toFixed(1)
+                        : '0'}
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1">Carga media por estación</p>
+                  </div>
+                </div>
+
+                {/* Banner de Garantía Democrática */}
+                <div className="bg-sky-50/80 border border-sky-200/80 rounded-2xl p-4 text-xs text-sky-900 flex items-start gap-3">
+                  <div className="p-1 bg-sky-100 rounded-lg text-sky-700 shrink-0 mt-0.5">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <strong className="font-bold text-sky-950 block mb-0.5">
+                      Garantía de Secreto de Voto y Auditoría Transparente:
+                    </strong>
+                    El sistema registra con precisión el identificador de la máquina, dirección IP, fecha/hora y curso del estudiante para prevenir fraudes, votos duplicados o suplantación en salas de sistemas. <strong>La opción de voto (candidato) nunca se vincula al equipo ni a la IP</strong>, manteniendo el secreto inviolable de la voluntad democrática.
+                  </div>
+                </div>
+
+                {/* Barra de Acciones y Búsqueda */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="relative w-full sm:w-80">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={machineSearch}
+                      onChange={(e) => setMachineSearch(e.target.value)}
+                      placeholder="Buscar por equipo, IP, curso, SO..."
+                      className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <button
+                      type="button"
+                      onClick={() => loadMachineAudit()}
+                      disabled={loadingMachineAudit}
+                      className="px-3.5 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${loadingMachineAudit ? 'animate-spin' : ''}`} />
+                      <span>Actualizar</span>
+                    </button>
+
+                    <a
+                      href={`/api/v1/admin/machine-audit/export${selectedElectionId ? `?election_id=${selectedElectionId}` : ''}`}
+                      download
+                      className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center gap-2 shadow-xs cursor-pointer"
+                    >
+                      <FileSpreadsheet className="w-4 h-4" />
+                      <span>Exportar Auditoría (Excel)</span>
+                    </a>
+                  </div>
+                </div>
+
+                {/* 2. Tabla de Estaciones / Equipos Resumidos */}
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+                  <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-900">Equipos y Terminales Detectados</h3>
+                      <p className="text-[11px] text-slate-400">Detalle de cada máquina donde se realizaron votaciones</p>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-slate-500">
+                      {machineAudit?.station_stats.length || 0} máquinas
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200">
+                        <tr>
+                          <th className="py-3 px-4">Identificador Equipo</th>
+                          <th className="py-3 px-4">Dirección IP</th>
+                          <th className="py-3 px-4">Dispositivo</th>
+                          <th className="py-3 px-4">Sistema / Navegador</th>
+                          <th className="py-3 px-4">Cursos Participantes</th>
+                          <th className="py-3 px-4 text-center">Total Votos</th>
+                          <th className="py-3 px-4">Última Votación</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                        {(!machineAudit?.station_stats || machineAudit.station_stats.length === 0) ? (
+                          <tr>
+                            <td colSpan={7} className="py-8 text-center text-slate-400">
+                              <Monitor className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                              <p className="font-bold text-sm text-slate-600">Aún no se han registrado votos en esta jornada.</p>
+                              <p className="text-xs text-slate-400 mt-0.5">
+                                Cuando los estudiantes voten desde los computadores del colegio, aquí aparecerá el registro de cada equipo.
+                              </p>
+                            </td>
+                          </tr>
+                        ) : (
+                          machineAudit.station_stats
+                            .filter(st => {
+                              if (!machineSearch.trim()) return true;
+                              const q = machineSearch.toLowerCase();
+                              return (
+                                st.station_id.toLowerCase().includes(q) ||
+                                st.ip_address.toLowerCase().includes(q) ||
+                                st.device_type.toLowerCase().includes(q) ||
+                                st.os_name.toLowerCase().includes(q) ||
+                                st.courses_used.some(c => c.toLowerCase().includes(q))
+                              );
+                            })
+                            .map((st) => {
+                              const totalVotes = machineAudit.summary.total_logged_votes || 1;
+                              const pct = Math.round((st.vote_count / totalVotes) * 100);
+                              return (
+                                <tr key={st.station_id} className="hover:bg-slate-50/80 transition-colors">
+                                  <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                                        <Monitor className="w-3.5 h-3.5" />
+                                      </div>
+                                      <span>{st.station_id}</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-3.5 px-4 font-mono text-[11px] text-slate-500">
+                                    <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-700 border border-slate-200">
+                                      {st.ip_address}
+                                    </span>
+                                  </td>
+                                  <td className="py-3.5 px-4">
+                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                                      {st.device_type}
+                                    </span>
+                                  </td>
+                                  <td className="py-3.5 px-4 text-slate-600">
+                                    <div className="font-semibold text-slate-800">{st.os_name}</div>
+                                    <div className="text-[10px] text-slate-400">{st.browser_name}</div>
+                                  </td>
+                                  <td className="py-3.5 px-4">
+                                    <div className="flex flex-wrap gap-1 max-w-xs">
+                                      {st.courses_used.slice(0, 6).map((crs) => (
+                                        <span
+                                          key={crs}
+                                          className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-50 text-sky-700 border border-sky-100"
+                                        >
+                                          {crs}
+                                        </span>
+                                      ))}
+                                      {st.courses_used.length > 6 && (
+                                        <span className="text-[10px] text-slate-400 font-bold self-center">
+                                          +{st.courses_used.length - 6} más
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="py-3.5 px-4 text-center">
+                                    <div className="inline-flex flex-col items-center">
+                                      <span className="font-black text-slate-900 text-sm">{st.vote_count}</span>
+                                      <span className="text-[10px] text-slate-400 font-medium">({pct}%)</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-3.5 px-4 font-mono text-[11px] text-slate-500">
+                                    <div>{new Date(st.last_vote_at).toLocaleDateString()}</div>
+                                    <div className="text-[10px] text-slate-400">{new Date(st.last_vote_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* 3. Tabla Cronológica Detallada de Votos por Máquina */}
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+                  <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-900">Historial Cronológico de Votos por Equipo</h3>
+                      <p className="text-[11px] text-slate-400">Últimos eventos registrados en las urnas electrónicas</p>
+                    </div>
+                    <span className="text-xs font-mono text-slate-400">
+                      Mostrando {machineAudit?.logs.length || 0} registros
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto max-h-96">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider text-[11px] sticky top-0 border-b border-slate-200">
+                        <tr>
+                          <th className="py-3 px-4">Fecha y Hora</th>
+                          <th className="py-3 px-4">Terminal / Equipo</th>
+                          <th className="py-3 px-4">Dirección IP</th>
+                          <th className="py-3 px-4">Curso del Votante</th>
+                          <th className="py-3 px-4">Dispositivo</th>
+                          <th className="py-3 px-4">SO y Navegador</th>
+                          <th className="py-3 px-4">Resolución</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                        {(!machineAudit?.logs || machineAudit.logs.length === 0) ? (
+                          <tr>
+                            <td colSpan={7} className="py-6 text-center text-slate-400">
+                              Sin registros aún.
+                            </td>
+                          </tr>
+                        ) : (
+                          machineAudit.logs
+                            .filter(log => {
+                              if (!machineSearch.trim()) return true;
+                              const q = machineSearch.toLowerCase();
+                              return (
+                                log.station_id.toLowerCase().includes(q) ||
+                                log.ip_address.toLowerCase().includes(q) ||
+                                log.student_course.toLowerCase().includes(q) ||
+                                log.os_name.toLowerCase().includes(q) ||
+                                log.browser_name.toLowerCase().includes(q)
+                              );
+                            })
+                            .map(log => (
+                              <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
+                                <td className="py-2.5 px-4 font-mono text-[11px] text-slate-500 whitespace-nowrap">
+                                  {new Date(log.voted_at).toLocaleString()}
+                                </td>
+                                <td className="py-2.5 px-4 font-mono font-bold text-sky-800">
+                                  {log.station_id}
+                                </td>
+                                <td className="py-2.5 px-4 font-mono text-[11px] text-slate-500">
+                                  {log.ip_address}
+                                </td>
+                                <td className="py-2.5 px-4">
+                                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-100">
+                                    {log.student_course}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-4 text-slate-600">
+                                  {log.device_type}
+                                </td>
+                                <td className="py-2.5 px-4 text-slate-600">
+                                  <span>{log.os_name}</span> • <span className="text-slate-400">{log.browser_name}</span>
+                                </td>
+                                <td className="py-2.5 px-4 font-mono text-[10px] text-slate-400">
+                                  {log.screen_resolution}
+                                </td>
+                              </tr>
+                            ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* VISTA 2: ACCIONES ADMINISTRATIVAS DEL SISTEMA */}
+            {auditSubTab === 'SYSTEM' && (
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-sm text-slate-900">Historial Inmutable de Acciones Administrativas</h3>
+                    <p className="text-[11px] text-slate-400">Eventos de sesión, cambios de configuración, gestión de elecciones y estudiantes</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => loadAuditLogs()}
+                    className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <RefreshCw className="w-3 h-3 text-slate-400" />
+                    <span>Recargar</span>
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-900 text-white font-bold uppercase tracking-wider text-[11px]">
+                      <tr>
+                        <th className="py-3 px-4">Fecha y Hora</th>
+                        <th className="py-3 px-4">Usuario</th>
+                        <th className="py-3 px-4">Acción</th>
+                        <th className="py-3 px-4">Detalles</th>
+                        <th className="py-3 px-4">IP</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                      {auditLogs.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="py-8 text-center text-slate-400">
+                            No hay acciones de sistema registradas.
+                          </td>
+                        </tr>
+                      ) : (
+                        auditLogs.map(log => (
+                          <tr key={log.id} className="hover:bg-slate-50">
+                            <td className="py-3 px-4 font-mono text-[11px] text-slate-500 whitespace-nowrap">
+                              {new Date(log.created_at).toLocaleString()}
+                            </td>
+                            <td className="py-3 px-4 font-bold text-slate-900">{log.username}</td>
+                            <td className="py-3 px-4 font-mono font-bold text-sky-800">{log.action}</td>
+                            <td className="py-3 px-4 text-slate-600">{log.details}</td>
+                            <td className="py-3 px-4 font-mono text-[11px] text-slate-400">{log.ip_address}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

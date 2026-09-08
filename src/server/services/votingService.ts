@@ -1,12 +1,14 @@
 import crypto from 'crypto';
 import { ICandidateRepository, IElectionRepository, IStudentRepository, IVoteRepository } from '../repositories/interfaces.js';
 import { AuditRepository } from '../repositories/auditRepository.js';
+import { MachineLogRepository } from '../repositories/machineLogRepository.js';
 import { QrCryptoService } from './qrCryptoService.js';
 import { sseBroadcast } from './sseBroadcastService.js';
 import { ElectionStats, IdentifyStudentResponse } from '../../shared/types.js';
 
 export class VotingService {
   private auditRepo: AuditRepository;
+  private machineLogRepo: MachineLogRepository;
 
   constructor(
     private electionRepo: IElectionRepository,
@@ -15,6 +17,7 @@ export class VotingService {
     private voteRepo: IVoteRepository
   ) {
     this.auditRepo = new AuditRepository();
+    this.machineLogRepo = new MachineLogRepository();
   }
 
   /**
@@ -114,6 +117,12 @@ export class VotingService {
     candidateId?: string | null;
     isBlank?: boolean;
     stationId?: string;
+    ipAddress?: string;
+    deviceType?: string;
+    osName?: string;
+    browserName?: string;
+    screenResolution?: string;
+    userAgent?: string;
   }): Promise<{ success: boolean; message: string; receipt_id?: string }> {
     if (!params.votingToken) {
       return { success: false, message: 'Token de votación ausente.' };
@@ -145,6 +154,17 @@ export class VotingService {
       }
     }
 
+    // Obtener el curso del estudiante para auditoría de terminales por salón (antes de consumir)
+    let studentCourse = '';
+    try {
+      const student = await this.studentRepo.findById(token.student_id);
+      if (student) {
+        studentCourse = student.course || '';
+      }
+    } catch {
+      // Ignorar si falla lectura del curso
+    }
+
     try {
       const receiptId = await this.voteRepo.castAnonymousVote({
         electionId: token.election_id,
@@ -154,6 +174,23 @@ export class VotingService {
         isBlank: Boolean(params.isBlank),
         stationId: params.stationId || 'web-kiosk'
       });
+
+      // Registro de auditoría de la máquina / equipo donde se votó (100% anónimo respecto al voto)
+      try {
+        await this.machineLogRepo.createLog({
+          election_id: token.election_id,
+          station_id: params.stationId || 'ESTACION-WEB',
+          ip_address: params.ipAddress || '127.0.0.1',
+          device_type: params.deviceType || 'Desktop',
+          os_name: params.osName || 'Desconocido',
+          browser_name: params.browserName || 'Navegador Web',
+          screen_resolution: params.screenResolution || '',
+          student_course: studentCourse,
+          user_agent: params.userAgent || ''
+        });
+      } catch (logErr) {
+        console.error('Error registrando auditoría de máquina:', logErr);
+      }
 
       // Transmitir actualización en tiempo real a todos los clientes SSE
       this.broadcastStatsUpdate(token.election_id).catch(err => {

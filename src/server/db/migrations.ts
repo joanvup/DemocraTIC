@@ -44,6 +44,7 @@ export async function runMigrations(): Promise<void> {
       slogan VARCHAR(255),
       description TEXT,
       photo_url LONGTEXT,
+      proposals_pdf_url LONGTEXT,
       display_order INTEGER NOT NULL DEFAULT 0,
       is_active INTEGER NOT NULL DEFAULT 1,
       created_at VARCHAR(30) NOT NULL,
@@ -141,6 +142,12 @@ export async function runMigrations(): Promise<void> {
   
   try {
     await executeRun(`ALTER TABLE settings ADD COLUMN allowed_ips TEXT;`);
+  } catch (e) {
+    // Ignore if column already exists
+  }
+
+  try {
+    await executeRun(`ALTER TABLE candidates ADD COLUMN proposals_pdf_url LONGTEXT;`);
   } catch (e) {
     // Ignore if column already exists
   }

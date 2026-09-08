@@ -36,6 +36,7 @@ export interface Candidate {
   slogan: string;
   description: string;
   photo_url: string;
+  proposals_pdf_url?: string | null;
   display_order: number;
   is_active: number; // 0 or 1
   created_at: string;

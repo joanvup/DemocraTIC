@@ -20,6 +20,7 @@ import { ChangePasswordModal } from '../components/admin/ChangePasswordModal.js'
 import { generateActaPDF } from '../utils/pdfReportService.js';
 import { ElectionCountdown } from '../components/admin/ElectionCountdown.js';
 import { ElectionCharts } from '../components/charts/ElectionCharts.js';
+import { openPdfDocument } from '../utils/pdfHelper.js';
 import {
   BarChart3,
   Calendar,
@@ -935,6 +936,25 @@ export function DashboardPage({
                       <h3 className="font-bold text-lg text-slate-900">{c.full_name}</h3>
                       <p className="text-xs font-semibold text-sky-700">Curso: {c.student_course}</p>
                       {c.slogan && <p className="text-xs italic text-slate-600 mt-2 bg-slate-50 p-2 rounded-lg">{c.slogan}</p>}
+
+                      {/* Documento PDF de Propuestas */}
+                      {c.proposals_pdf_url ? (
+                        <button
+                          type="button"
+                          onClick={() => openPdfDocument(c.proposals_pdf_url!, `Propuestas - ${c.full_name}`)}
+                          className="mt-3 w-full py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer group"
+                          title="Abrir documento PDF de propuestas de campaña"
+                        >
+                          <FileText className="w-3.5 h-3.5 text-rose-600 group-hover:scale-110 transition-transform" />
+                          <span>Ver Propuestas (PDF)</span>
+                          <ExternalLink className="w-3 h-3 text-rose-400 ml-auto" />
+                        </button>
+                      ) : (
+                        <div className="mt-3 py-1.5 px-3 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-[11px] text-slate-400 flex items-center gap-1.5">
+                          <FileText className="w-3.5 h-3.5 text-slate-300" />
+                          <span>Sin PDF de propuestas</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 

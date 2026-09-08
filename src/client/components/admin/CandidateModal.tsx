@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, ChangeEvent, DragEvent, FormEvent } from 'react';
 import { Candidate } from '../../../shared/types.js';
+import { openPdfDocument } from '../../utils/pdfHelper.js';
 import { 
   X, 
   Upload, 
@@ -9,7 +10,11 @@ import {
   Check, 
   AlertCircle, 
   RefreshCw,
-  User
+  User,
+  FileText,
+  ExternalLink,
+  Eye,
+  FileCheck
 } from 'lucide-react';
 
 interface CandidateModalProps {
@@ -81,6 +86,7 @@ export function CandidateModal({
     slogan: '',
     description: '',
     photo_url: '',
+    proposals_pdf_url: '',
     is_active: 1
   });
 
@@ -89,9 +95,18 @@ export function CandidateModal({
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+
+  // Estados para el documento PDF de propuestas
+  const [pdfSourceMode, setPdfSourceMode] = useState<'file' | 'url'>('file');
+  const [isPdfDragging, setIsPdfDragging] = useState(false);
+  const [isProcessingPdf, setIsProcessingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pdfFileName, setPdfFileName] = useState<string | null>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -103,10 +118,14 @@ export function CandidateModal({
           slogan: candidate.slogan || '',
           description: candidate.description || '',
           photo_url: candidate.photo_url || '',
+          proposals_pdf_url: candidate.proposals_pdf_url || '',
           is_active: candidate.is_active ?? 1
         });
         setPhotoSourceMode(candidate.photo_url?.startsWith('data:') ? 'file' : (candidate.photo_url ? 'url' : 'file'));
         setFileName(candidate.photo_url?.startsWith('data:') ? 'Foto local cargada' : null);
+
+        setPdfSourceMode(candidate.proposals_pdf_url?.startsWith('data:') ? 'file' : (candidate.proposals_pdf_url ? 'url' : 'file'));
+        setPdfFileName(candidate.proposals_pdf_url?.startsWith('data:') ? 'Documento_Propuestas.pdf' : null);
       } else {
         setFormData({
           full_name: '',
@@ -115,13 +134,18 @@ export function CandidateModal({
           slogan: '',
           description: '',
           photo_url: '',
+          proposals_pdf_url: '',
           is_active: 1
         });
         setPhotoSourceMode('file');
         setFileName(null);
+        setPdfSourceMode('file');
+        setPdfFileName(null);
       }
       setImageError(null);
+      setPdfError(null);
       setIsProcessingImage(false);
+      setIsProcessingPdf(false);
     }
   }, [isOpen, candidate, defaultListNumber]);
 
@@ -180,6 +204,77 @@ export function CandidateModal({
     setImageError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const handlePdfFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processPdfFile(file);
+  };
+
+  const processPdfFile = async (file: File) => {
+    try {
+      setIsProcessingPdf(true);
+      setPdfError(null);
+      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        throw new Error('El archivo seleccionado debe ser un documento PDF (.pdf).');
+      }
+      if (file.size > 15 * 1024 * 1024) {
+        throw new Error('El documento PDF no debe exceder los 15MB de tamaño.');
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        setFormData(prev => ({ ...prev, proposals_pdf_url: dataUrl }));
+        setPdfFileName(file.name);
+        setIsProcessingPdf(false);
+      };
+      reader.onerror = () => {
+        setPdfError('Error al leer el archivo PDF.');
+        setIsProcessingPdf(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al procesar el archivo PDF';
+      setPdfError(msg);
+      setIsProcessingPdf(false);
+    } finally {
+      if (pdfFileInputRef.current) {
+        pdfFileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handlePdfDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsPdfDragging(true);
+  };
+
+  const handlePdfDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsPdfDragging(false);
+  };
+
+  const handlePdfDrop = async (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsPdfDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      await processPdfFile(file);
+    }
+  };
+
+  const handleRemovePdf = () => {
+    setFormData(prev => ({ ...prev, proposals_pdf_url: '' }));
+    setPdfFileName(null);
+    setPdfError(null);
+    if (pdfFileInputRef.current) {
+      pdfFileInputRef.current.value = '';
     }
   };
 
@@ -448,6 +543,159 @@ export function CandidateModal({
             )}
           </div>
 
+          {/* SECCIÓN DE PROPUESTAS (DOCUMENTO PDF) */}
+          <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="font-bold text-slate-800 flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-rose-600" />
+                Plan de Gobierno y Propuestas (PDF)
+              </label>
+
+              {/* Selector de Modo */}
+              <div className="flex items-center gap-1 bg-slate-200/80 p-0.5 rounded-lg text-[11px] font-bold">
+                <button
+                  type="button"
+                  id="tab_pdf_file"
+                  onClick={() => setPdfSourceMode('file')}
+                  className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1 cursor-pointer ${
+                    pdfSourceMode === 'file'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Upload className="w-3 h-3" />
+                  Archivo PDF
+                </button>
+                <button
+                  type="button"
+                  id="tab_pdf_url"
+                  onClick={() => setPdfSourceMode('url')}
+                  className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1 cursor-pointer ${
+                    pdfSourceMode === 'url'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <LinkIcon className="w-3 h-3" />
+                  URL Web
+                </button>
+              </div>
+            </div>
+
+            {/* VISTA PREVIA SI YA HAY PDF CARGADO */}
+            {formData.proposals_pdf_url ? (
+              <div className="bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center flex-shrink-0">
+                    <FileCheck className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-xs">
+                      <Check className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>Documento PDF asignado</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 truncate font-mono mt-0.5">
+                      {pdfFileName || (formData.proposals_pdf_url.startsWith('data:') ? 'propuestas_candidato.pdf' : formData.proposals_pdf_url)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button
+                    type="button"
+                    id="preview_pdf_btn"
+                    onClick={() => openPdfDocument(formData.proposals_pdf_url, `Propuestas - ${formData.full_name || 'Candidato'}`)}
+                    className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                    title="Abrir y previsualizar documento PDF"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Ver</span>
+                  </button>
+                  <button
+                    type="button"
+                    id="remove_candidate_pdf_btn"
+                    onClick={handleRemovePdf}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                    title="Eliminar documento PDF"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            {/* MODO 1: SUBIR ARCHIVO PDF */}
+            {pdfSourceMode === 'file' && !formData.proposals_pdf_url && (
+              <div>
+                <input
+                  ref={pdfFileInputRef}
+                  id="candidate_pdf_file_input"
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handlePdfFileChange}
+                  className="hidden"
+                />
+
+                <div
+                  onDragOver={handlePdfDragOver}
+                  onDragLeave={handlePdfDragLeave}
+                  onDrop={handlePdfDrop}
+                  onClick={() => pdfFileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all ${
+                    isPdfDragging
+                      ? 'border-rose-500 bg-rose-50/80 scale-[1.01]'
+                      : 'border-slate-300 hover:border-rose-400 bg-white hover:bg-slate-50/60'
+                  }`}
+                >
+                  {isProcessingPdf ? (
+                    <div className="flex flex-col items-center justify-center py-2 space-y-2">
+                      <RefreshCw className="w-6 h-6 text-rose-600 animate-spin" />
+                      <p className="font-bold text-slate-700">Cargando y procesando PDF...</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center space-y-1.5">
+                      <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-800 text-xs">
+                          Arrastra el PDF de propuestas aquí o <span className="text-rose-600 underline">haz clic para examinar</span>
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Formato PDF oficial del plan de gobierno (máx. 15MB)
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* MODO 2: INGRESAR URL WEB */}
+            {pdfSourceMode === 'url' && !formData.proposals_pdf_url && (
+              <div className="space-y-2">
+                <input
+                  id="candidate_pdf_url_input"
+                  type="url"
+                  placeholder="https://colegio.edu.co/documentos/propuestas_11.pdf"
+                  value={formData.proposals_pdf_url}
+                  onChange={e => setFormData({ ...formData, proposals_pdf_url: e.target.value })}
+                  className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-slate-900 font-mono text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                />
+                <p className="text-[11px] text-slate-500">
+                  Enlace directo a documento PDF alojado en internet o Google Drive (con acceso público).
+                </p>
+              </div>
+            )}
+
+            {pdfError && (
+              <div className="bg-rose-50 text-rose-700 p-2.5 rounded-xl text-xs flex items-center gap-2 border border-rose-200">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{pdfError}</span>
+              </div>
+            )}
+          </div>
+
           {/* Botones de Acción */}
           <div className="flex gap-3 pt-3 border-t border-slate-100">
             <button
@@ -461,7 +709,7 @@ export function CandidateModal({
             <button
               id="save_candidate_btn"
               type="submit"
-              disabled={isSubmitting || isProcessingImage}
+              disabled={isSubmitting || isProcessingImage || isProcessingPdf}
               className="w-1/2 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? (

@@ -6,21 +6,21 @@ import { Candidate } from '../../shared/types.js';
 export class CandidateRepository implements ICandidateRepository {
   async findById(id: string): Promise<Candidate | null> {
     return executeGetOne<Candidate>(
-      'SELECT id, election_id, full_name, student_course, list_number, slogan, description, photo_url, display_order, is_active, created_at, updated_at FROM candidates WHERE id = ?',
+      'SELECT id, election_id, full_name, student_course, list_number, slogan, description, photo_url, proposals_pdf_url, display_order, is_active, created_at, updated_at FROM candidates WHERE id = ?',
       [id]
     );
   }
 
   async findByElectionId(electionId: string): Promise<Candidate[]> {
     return executeQuery<Candidate>(
-      'SELECT id, election_id, full_name, student_course, list_number, slogan, description, photo_url, display_order, is_active, created_at, updated_at FROM candidates WHERE election_id = ? AND is_active = 1 ORDER BY list_number ASC, display_order ASC',
+      'SELECT id, election_id, full_name, student_course, list_number, slogan, description, photo_url, proposals_pdf_url, display_order, is_active, created_at, updated_at FROM candidates WHERE election_id = ? AND is_active = 1 ORDER BY list_number ASC, display_order ASC',
       [electionId]
     );
   }
 
   async findAllByElection(electionId: string): Promise<Candidate[]> {
     return executeQuery<Candidate>(
-      'SELECT id, election_id, full_name, student_course, list_number, slogan, description, photo_url, display_order, is_active, created_at, updated_at FROM candidates WHERE election_id = ? ORDER BY list_number ASC, display_order ASC',
+      'SELECT id, election_id, full_name, student_course, list_number, slogan, description, photo_url, proposals_pdf_url, display_order, is_active, created_at, updated_at FROM candidates WHERE election_id = ? ORDER BY list_number ASC, display_order ASC',
       [electionId]
     );
   }
@@ -29,8 +29,8 @@ export class CandidateRepository implements ICandidateRepository {
     const id = `cand-${crypto.randomUUID()}`;
     const now = new Date().toISOString();
     await executeRun(
-      `INSERT INTO candidates (id, election_id, full_name, student_course, list_number, slogan, description, photo_url, display_order, is_active, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO candidates (id, election_id, full_name, student_course, list_number, slogan, description, photo_url, proposals_pdf_url, display_order, is_active, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         candidate.election_id,
@@ -40,6 +40,7 @@ export class CandidateRepository implements ICandidateRepository {
         candidate.slogan ?? '',
         candidate.description ?? '',
         candidate.photo_url ?? '',
+        candidate.proposals_pdf_url ?? null,
         candidate.display_order ?? candidate.list_number,
         candidate.is_active ?? 1,
         now,
@@ -56,6 +57,7 @@ export class CandidateRepository implements ICandidateRepository {
       slogan: candidate.slogan ?? '',
       description: candidate.description ?? '',
       photo_url: candidate.photo_url ?? '',
+      proposals_pdf_url: candidate.proposals_pdf_url ?? null,
       display_order: candidate.display_order ?? candidate.list_number,
       is_active: candidate.is_active ?? 1,
       created_at: now,
@@ -65,7 +67,7 @@ export class CandidateRepository implements ICandidateRepository {
 
   async update(id: string, candidate: Partial<Omit<Candidate, 'id' | 'created_at' | 'updated_at'>>): Promise<void> {
     const fields: string[] = [];
-    const values: (string | number)[] = [];
+    const values: (string | number | null)[] = [];
 
     if (candidate.full_name !== undefined) { fields.push('full_name = ?'); values.push(candidate.full_name); }
     if (candidate.student_course !== undefined) { fields.push('student_course = ?'); values.push(candidate.student_course); }
@@ -73,6 +75,7 @@ export class CandidateRepository implements ICandidateRepository {
     if (candidate.slogan !== undefined) { fields.push('slogan = ?'); values.push(candidate.slogan); }
     if (candidate.description !== undefined) { fields.push('description = ?'); values.push(candidate.description); }
     if (candidate.photo_url !== undefined) { fields.push('photo_url = ?'); values.push(candidate.photo_url); }
+    if (candidate.proposals_pdf_url !== undefined) { fields.push('proposals_pdf_url = ?'); values.push(candidate.proposals_pdf_url ?? null); }
     if (candidate.display_order !== undefined) { fields.push('display_order = ?'); values.push(candidate.display_order); }
     if (candidate.is_active !== undefined) { fields.push('is_active = ?'); values.push(candidate.is_active); }
 

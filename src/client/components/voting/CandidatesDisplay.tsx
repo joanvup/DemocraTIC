@@ -2,11 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Candidate } from '../../../shared/types.js';
 import { votingApi } from '../../services/api.js';
 import { useTheme } from '../../hooks/useTheme.js';
+import { openPdfDocument } from '../../utils/pdfHelper.js';
 import {
   Award,
   BookOpen,
   CheckCircle2,
   ChevronRight,
+  ExternalLink,
+  FileText,
   Info,
   Layers,
   Quote,
@@ -240,7 +243,22 @@ export function CandidatesDisplay({
               )}
 
               {/* Botón para ver detalles / propuestas completas */}
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 mt-auto">
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 mt-auto space-y-2">
+                {cand.proposals_pdf_url && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openPdfDocument(cand.proposals_pdf_url!, `Propuestas - ${cand.full_name}`);
+                    }}
+                    className="w-full py-1.5 px-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 dark:text-rose-300 border border-rose-200 dark:border-rose-900 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    title="Abrir documento PDF oficial de propuestas"
+                  >
+                    <FileText className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                    <span>Ver Propuestas en PDF</span>
+                    <ExternalLink className="w-2.5 h-2.5 ml-auto opacity-70" />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setSelectedForModal(cand)}
@@ -348,6 +366,38 @@ export function CandidatesDisplay({
               ) : (
                 <div className="p-4 text-center text-xs text-slate-500">
                   Sin descripción adicional registrada en la plataforma.
+                </div>
+              )}
+
+              {/* Documento PDF de Propuestas si existe */}
+              {selectedForModal.proposals_pdf_url && (
+                <div className={`p-4 rounded-2xl border ${
+                  isDark ? 'bg-rose-950/30 border-rose-800/40 text-rose-300' : 'bg-rose-50 border-rose-200 text-rose-900'
+                }`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-500 border border-rose-500/30 flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider block">
+                          Documento Oficial de Campaña (PDF)
+                        </span>
+                        <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                          Plan de gobierno y propuestas del candidato.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openPdfDocument(selectedForModal.proposals_pdf_url!, `Propuestas - ${selectedForModal.full_name}`)}
+                      className="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer flex-shrink-0"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Ver PDF</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
               )}
 

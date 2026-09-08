@@ -1,5 +1,6 @@
 import { Candidate } from '../../../shared/types.js';
-import { CheckCircle2, User } from 'lucide-react';
+import { CheckCircle2, User, FileText, ExternalLink } from 'lucide-react';
+import { openPdfDocument } from '../../utils/pdfHelper.js';
 
 interface CandidateCardProps {
   key?: string;
@@ -69,6 +70,23 @@ export function CandidateCard({ candidate, onSelect, isSelected }: CandidateCard
           <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
             {candidate.description}
           </p>
+        )}
+
+        {/* Documento PDF de Propuestas */}
+        {candidate.proposals_pdf_url && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              openPdfDocument(candidate.proposals_pdf_url!, `Propuestas - ${candidate.full_name}`);
+            }}
+            className="w-full mt-2 py-1.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 dark:text-rose-300 border border-rose-200 dark:border-rose-900 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            title="Abrir y leer documento oficial de propuestas"
+          >
+            <FileText className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+            <span>Ver Propuestas (PDF)</span>
+            <ExternalLink className="w-3 h-3 ml-auto opacity-70" />
+          </button>
         )}
       </div>
 

@@ -177,4 +177,38 @@ export class StudentRepository implements IStudentRepository {
     const res = await executeGetOne<{ count: number }>("SELECT COUNT(*) as count FROM students WHERE status = 'ACTIVE'");
     return res ? Number(res.count) : 0;
   }
+
+  async resetCensus(options?: { deleteVotes?: boolean; electionId?: string }): Promise<{ deletedStudents: number; deletedVotes: number }> {
+    return executeTransaction(async () => {
+      // 1. Contar estudiantes antes de eliminar
+      const countRes = await executeGetOne<{ count: number }>('SELECT COUNT(*) as count FROM students');
+      const deletedStudents = countRes ? Number(countRes.count) : 0;
+
+      // 2. Limpiar registros relacionados a estudiantes para evitar violaciones de integridad
+      await executeRun('DELETE FROM voting_tokens');
+      await executeRun('DELETE FROM voter_status');
+
+      let deletedVotes = 0;
+      if (options?.deleteVotes) {
+        const votesCountRes = await executeGetOne<{ count: number }>(
+          options.electionId ? 'SELECT COUNT(*) as count FROM votes WHERE election_id = ?' : 'SELECT COUNT(*) as count FROM votes',
+          options.electionId ? [options.electionId] : []
+        );
+        deletedVotes = votesCountRes ? Number(votesCountRes.count) : 0;
+
+        if (options.electionId) {
+          await executeRun('DELETE FROM votes WHERE election_id = ?', [options.electionId]);
+          await executeRun('DELETE FROM machine_voting_logs WHERE election_id = ?', [options.electionId]);
+        } else {
+          await executeRun('DELETE FROM votes');
+          await executeRun('DELETE FROM machine_voting_logs');
+        }
+      }
+
+      // 3. Eliminar todos los estudiantes
+      await executeRun('DELETE FROM students');
+
+      return { deletedStudents, deletedVotes };
+    });
+  }
 }

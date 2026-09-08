@@ -116,6 +116,24 @@ export const adminApi = {
     method: 'POST',
     body: JSON.stringify(student)
   }),
+  resetCensus: (deleteVotes?: boolean, electionId?: string) => fetchJson<{
+    success: boolean;
+    message: string;
+    deletedStudents: number;
+    deletedVotes: number;
+  }>('/api/v1/admin/students/reset-census', {
+    method: 'POST',
+    body: JSON.stringify({ deleteVotes, electionId })
+  }),
+  resetVotingStatus: (electionId?: string) => fetchJson<{
+    success: boolean;
+    message: string;
+    deletedVotes: number;
+    resetVoters: number;
+  }>('/api/v1/admin/students/reset-voting-status', {
+    method: 'POST',
+    body: JSON.stringify({ electionId })
+  }),
 
   // Importar Excel
   analyzeExcel: (base64Data: string, fileName: string) => fetchJson<{

@@ -35,6 +35,7 @@ export interface IStudentRepository {
   update(id: string, student: Partial<Omit<Student, 'id' | 'created_at' | 'updated_at'>>): Promise<void>;
   delete(id: string): Promise<void>;
   countTotal(): Promise<number>;
+  resetCensus(options?: { deleteVotes?: boolean; electionId?: string }): Promise<{ deletedStudents: number; deletedVotes: number }>;
 }
 
 export interface IVotingToken {
@@ -79,6 +80,7 @@ export interface IVoteRepository {
     hour: string;
     votes_count: number;
   }>>;
+  resetVotes(electionId?: string): Promise<{ deletedVotes: number; resetVoters: number }>;
 }
 
 export interface IAuditRepository {

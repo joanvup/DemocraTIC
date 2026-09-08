@@ -363,6 +363,64 @@ router.post('/students/import-execute', requireAuth(['SUPERADMIN', 'ADMIN_ELECTO
   }
 });
 
+/**
+ * POST /api/v1/admin/students/reset-census
+ * Vacía el censo de estudiantes (con opción de purgar votos asociados)
+ */
+router.post('/students/reset-census', requireAuth(['SUPERADMIN', 'ADMIN_ELECTORAL']), async (req: AuthenticatedRequest, res) => {
+  try {
+    const { deleteVotes, electionId } = req.body;
+    const result = await studentRepo.resetCensus({ deleteVotes: Boolean(deleteVotes), electionId });
+
+    await auditRepo.create({
+      user_id: req.user?.userId || null,
+      username: req.user?.username || 'system',
+      action: 'RESET_CENSUS',
+      details: `Censo vaciado: ${result.deletedStudents} estudiantes eliminados.${result.deletedVotes > 0 ? ` Se purgaron ${result.deletedVotes} votos de la urna.` : ''}`,
+      ip_address: req.ip || '127.0.0.1'
+    });
+
+    res.json({
+      success: true,
+      message: `Censo electoral vaciado correctamente. Se eliminaron ${result.deletedStudents} estudiantes${result.deletedVotes > 0 ? ` y ${result.deletedVotes} votos.` : '.'}`,
+      deletedStudents: result.deletedStudents,
+      deletedVotes: result.deletedVotes
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Error al vaciar el censo de estudiantes';
+    res.status(500).json({ success: false, message: msg });
+  }
+});
+
+/**
+ * POST /api/v1/admin/students/reset-voting-status
+ * Puesta a cero: Reinicia votos y marcas de sufragio a pendiente conservando los estudiantes
+ */
+router.post('/students/reset-voting-status', requireAuth(['SUPERADMIN', 'ADMIN_ELECTORAL']), async (req: AuthenticatedRequest, res) => {
+  try {
+    const { electionId } = req.body;
+    const result = await voteRepo.resetVotes(electionId);
+
+    await auditRepo.create({
+      user_id: req.user?.userId || null,
+      username: req.user?.username || 'system',
+      action: 'RESET_VOTES_SIMULACRO',
+      details: `Puesta a cero: ${result.deletedVotes} votos eliminados, ${result.resetVoters} estudiantes restaurados a pendiente.${electionId ? ` Elección: ${electionId}` : ''}`,
+      ip_address: req.ip || '127.0.0.1'
+    });
+
+    res.json({
+      success: true,
+      message: `Puesta a cero completada. Se restablecieron ${result.resetVoters} estados de votante a pendiente y se eliminaron ${result.deletedVotes} votos de la urna.`,
+      deletedVotes: result.deletedVotes,
+      resetVoters: result.resetVoters
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Error al reiniciar votos y estados de votación';
+    res.status(500).json({ success: false, message: msg });
+  }
+});
+
 /* ==========================================================================
    ESTADÍSTICAS Y REPORTES
    ========================================================================== */

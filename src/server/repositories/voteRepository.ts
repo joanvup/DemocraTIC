@@ -175,4 +175,37 @@ export class VoteRepository implements IVoteRepository {
 
     return result;
   }
+
+  async resetVotes(electionId?: string): Promise<{ deletedVotes: number; resetVoters: number }> {
+    return executeTransaction(async () => {
+      let deletedVotes = 0;
+      let resetVoters = 0;
+
+      if (electionId) {
+        const vRes = await executeGetOne<{ count: number }>('SELECT COUNT(*) as count FROM votes WHERE election_id = ?', [electionId]);
+        deletedVotes = vRes ? Number(vRes.count) : 0;
+
+        const sRes = await executeGetOne<{ count: number }>('SELECT COUNT(*) as count FROM voter_status WHERE election_id = ?', [electionId]);
+        resetVoters = sRes ? Number(sRes.count) : 0;
+
+        await executeRun('DELETE FROM votes WHERE election_id = ?', [electionId]);
+        await executeRun('DELETE FROM voter_status WHERE election_id = ?', [electionId]);
+        await executeRun('DELETE FROM voting_tokens WHERE election_id = ?', [electionId]);
+        await executeRun('DELETE FROM machine_voting_logs WHERE election_id = ?', [electionId]);
+      } else {
+        const vRes = await executeGetOne<{ count: number }>('SELECT COUNT(*) as count FROM votes');
+        deletedVotes = vRes ? Number(vRes.count) : 0;
+
+        const sRes = await executeGetOne<{ count: number }>('SELECT COUNT(*) as count FROM voter_status');
+        resetVoters = sRes ? Number(sRes.count) : 0;
+
+        await executeRun('DELETE FROM votes');
+        await executeRun('DELETE FROM voter_status');
+        await executeRun('DELETE FROM voting_tokens');
+        await executeRun('DELETE FROM machine_voting_logs');
+      }
+
+      return { deletedVotes, resetVoters };
+    });
+  }
 }

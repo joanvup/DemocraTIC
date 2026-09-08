@@ -12,11 +12,13 @@ import {
   FileText,
   Info,
   Layers,
+  Maximize2,
   Quote,
   RefreshCw,
   Sparkles,
   User,
-  X
+  X,
+  ZoomIn
 } from 'lucide-react';
 
 export interface CandidatesDisplayProps {
@@ -38,6 +40,7 @@ export function CandidatesDisplay({
   const [loading, setLoading] = useState(!initialCandidates || initialCandidates.length === 0);
   const [error, setError] = useState<string | null>(null);
   const [selectedForModal, setSelectedForModal] = useState<Candidate | null>(null);
+  const [isPhotoZoomed, setIsPhotoZoomed] = useState(false);
 
   const fetchCandidates = useCallback(async () => {
     try {
@@ -281,7 +284,7 @@ export function CandidatesDisplay({
       {/* Modal Informativo Detallado del Candidato */}
       {selectedForModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-          <div className={`rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border ${
+          <div className={`rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden border ${
             isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
           }`}>
             {/* Header del Modal */}
@@ -292,13 +295,16 @@ export function CandidatesDisplay({
                 </div>
                 <div>
                   <span className="text-xs uppercase font-black tracking-widest text-sky-300">
-                    Ficha de Candidatura
+                    Ficha de Candidatura Oficial
                   </span>
-                  <h3 className="text-xl font-black">Tarjetón #{selectedForModal.list_number}</h3>
+                  <h3 className="text-xl sm:text-2xl font-black">Tarjetón #{selectedForModal.list_number}</h3>
                 </div>
               </div>
               <button
-                onClick={() => setSelectedForModal(null)}
+                onClick={() => {
+                  setSelectedForModal(null);
+                  setIsPhotoZoomed(false);
+                }}
                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
@@ -306,56 +312,88 @@ export function CandidatesDisplay({
             </div>
 
             {/* Contenido del Modal */}
-            <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
-              <div className="flex items-center gap-4">
-                <div className={`w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 border-2 shadow-md ${
-                  isDark ? 'bg-slate-950 border-slate-700' : 'bg-slate-100 border-slate-300'
-                }`}>
+            <div className="p-6 space-y-6 max-h-[78vh] overflow-y-auto">
+              {/* Sección Principal con Foto Ampliada y Datos */}
+              <div className={`p-5 rounded-2xl border flex flex-col sm:flex-row gap-6 items-center sm:items-start ${
+                isDark ? 'bg-slate-950/70 border-slate-800' : 'bg-slate-50/90 border-slate-200'
+              }`}>
+                {/* Fotografía de Gran Formato con Zoom Interactivo */}
+                <div
+                  onClick={() => selectedForModal.photo_url && setIsPhotoZoomed(true)}
+                  className={`relative w-full sm:w-60 h-72 sm:h-80 rounded-2xl overflow-hidden flex-shrink-0 border-2 shadow-lg group ${
+                    selectedForModal.photo_url ? 'cursor-pointer' : 'cursor-default'
+                  } ${
+                    isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-300'
+                  }`}
+                  title={selectedForModal.photo_url ? "Haz clic para ver la foto en tamaño completo" : undefined}
+                >
                   {selectedForModal.photo_url ? (
-                    <img
-                      src={selectedForModal.photo_url}
-                      alt={selectedForModal.full_name}
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
+                    <>
+                      <img
+                        src={selectedForModal.photo_url}
+                        alt={selectedForModal.full_name}
+                        className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                        referrerPolicy="no-referrer"
+                      />
+                      {/* Overlay para invitar al zoom */}
+                      <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold backdrop-blur-[2px]">
+                        <ZoomIn className="w-4 h-4" />
+                        <span>Clic para ampliar foto</span>
+                      </div>
+                      <div className="absolute bottom-2.5 right-2.5 bg-slate-900/80 backdrop-blur-xs text-white p-1.5 rounded-lg shadow-sm opacity-90 group-hover:opacity-100 transition-opacity">
+                        <Maximize2 className="w-3.5 h-3.5" />
+                      </div>
+                    </>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-400">
-                      <User className="w-10 h-10 opacity-60" />
+                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2">
+                      <User className="w-16 h-16 opacity-40" />
+                      <span className="text-xs font-semibold">Sin foto oficial cargada</span>
                     </div>
                   )}
                 </div>
-                <div>
-                  <h4 className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {selectedForModal.full_name}
-                  </h4>
-                  <p className="text-xs font-bold text-sky-500 uppercase tracking-wider mt-0.5">
-                    Curso: {selectedForModal.student_course}
-                  </p>
-                  <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-500/20 text-emerald-500 border border-emerald-500/30">
-                    Tarjetón Oficial #{selectedForModal.list_number}
-                  </span>
+
+                {/* Datos del Candidato */}
+                <div className="flex-grow space-y-3.5 text-center sm:text-left w-full">
+                  <div>
+                    <span className="inline-block px-3 py-1 rounded-full text-xs font-black bg-sky-900 dark:bg-sky-500/20 text-white dark:text-sky-300 border border-sky-700/50 mb-2 shadow-xs">
+                      TARJETÓN OFICIAL #{selectedForModal.list_number}
+                    </span>
+                    <h4 className={`text-2xl sm:text-3xl font-black leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {selectedForModal.full_name}
+                    </h4>
+                    <p className="text-xs sm:text-sm font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider mt-1">
+                      Curso Escolar: {selectedForModal.student_course}
+                    </p>
+                  </div>
+
+                  {selectedForModal.slogan && (
+                    <div className={`p-3.5 rounded-xl border italic text-xs sm:text-sm font-medium ${
+                      isDark ? 'bg-slate-900/90 border-slate-800 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
+                    }`}>
+                      <p>"{selectedForModal.slogan}"</p>
+                    </div>
+                  )}
+
+                  {selectedForModal.proposals_pdf_url && (
+                    <button
+                      type="button"
+                      onClick={() => openPdfDocument(selectedForModal.proposals_pdf_url!, `Propuestas - ${selectedForModal.full_name}`)}
+                      className="w-full sm:w-auto py-2.5 px-4 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold flex items-center justify-center sm:justify-start gap-2 shadow-md hover:shadow-rose-600/30 transition-all cursor-pointer"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span>Ver Plan de Gobierno (PDF)</span>
+                      <ExternalLink className="w-3.5 h-3.5 ml-auto sm:ml-1" />
+                    </button>
+                  )}
                 </div>
               </div>
-
-              {selectedForModal.slogan && (
-                <div className={`p-4 rounded-2xl border ${
-                  isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
-                }`}>
-                  <span className="text-[11px] font-bold text-sky-500 uppercase tracking-wider block mb-1">
-                    Lema de Campaña
-                  </span>
-                  <p className={`text-sm italic font-medium ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                    "{selectedForModal.slogan}"
-                  </p>
-                </div>
-              )}
 
               {selectedForModal.description ? (
                 <div className={`p-4 rounded-2xl border ${
                   isDark ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50/80 border-slate-200'
                 }`}>
                   <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
-                    Propuestas & Compromisos
+                    Propuestas & Compromisos de Campaña
                   </span>
                   <div className={`text-xs sm:text-sm whitespace-pre-line leading-relaxed ${
                     isDark ? 'text-slate-300' : 'text-slate-700'
@@ -384,7 +422,7 @@ export function CandidatesDisplay({
                           Documento Oficial de Campaña (PDF)
                         </span>
                         <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                          Plan de gobierno y propuestas del candidato.
+                          Plan de gobierno y propuestas completas del candidato.
                         </p>
                       </div>
                     </div>
@@ -406,7 +444,7 @@ export function CandidatesDisplay({
               }`}>
                 <Info className="w-4 h-4 flex-shrink-0" />
                 <span>
-                  Para votar por este u otro candidato, escanea tu código QR o escribe tu código estudiantil.
+                  Para votar por este u otro candidato, escanea tu código QR o escribe tu código estudiantil en la cabina.
                 </span>
               </div>
             </div>
@@ -417,11 +455,52 @@ export function CandidatesDisplay({
             }`}>
               <button
                 type="button"
-                onClick={() => setSelectedForModal(null)}
+                onClick={() => {
+                  setSelectedForModal(null);
+                  setIsPhotoZoomed(false);
+                }}
                 className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition-colors cursor-pointer"
               >
                 Cerrar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox / Zoom de Foto en Pantalla Completa */}
+      {isPhotoZoomed && selectedForModal?.photo_url && (
+        <div
+          onClick={() => setIsPhotoZoomed(false)}
+          className="fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200 cursor-pointer"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-w-3xl max-h-[90vh] bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col cursor-default"
+          >
+            <div className="p-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between text-white">
+              <div className="flex items-center gap-2.5">
+                <span className="font-bold text-sm">{selectedForModal.full_name}</span>
+                <span className="text-xs text-sky-400 font-mono bg-sky-950/80 border border-sky-800 px-2 py-0.5 rounded-md">
+                  Tarjetón #{selectedForModal.list_number}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPhotoZoomed(false)}
+                className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                title="Cerrar vista completa"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 flex items-center justify-center overflow-auto bg-black/40">
+              <img
+                src={selectedForModal.photo_url}
+                alt={selectedForModal.full_name}
+                className="max-w-full max-h-[75vh] object-contain rounded-2xl shadow-xl"
+                referrerPolicy="no-referrer"
+              />
             </div>
           </div>
         </div>

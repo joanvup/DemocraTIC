@@ -5,8 +5,9 @@ import { VotingStationPage } from './client/pages/VotingStationPage.js';
 import { LoginPage } from './client/pages/LoginPage.js';
 import { DashboardPage } from './client/pages/DashboardPage.js';
 import { PublicResultsPage } from './client/pages/PublicResultsPage.js';
+import { ManualPage } from './client/pages/ManualPage.js';
 
-type AppRoute = 'VOTING' | 'LOGIN' | 'DASHBOARD' | 'PUBLIC_RESULTS';
+type AppRoute = 'VOTING' | 'LOGIN' | 'DASHBOARD' | 'PUBLIC_RESULTS' | 'MANUAL';
 
 function MainApp() {
   const { user, loading } = useAuth();
@@ -19,6 +20,8 @@ function MainApp() {
       setCurrentRoute('PUBLIC_RESULTS');
     } else if (path.includes('/dashboard') || path.includes('/admin')) {
       setCurrentRoute(user ? 'DASHBOARD' : 'LOGIN');
+    } else if (path.includes('/manual')) {
+      setCurrentRoute('MANUAL');
     } else {
       setCurrentRoute('VOTING');
     }
@@ -55,15 +58,30 @@ function MainApp() {
       <DashboardPage
         onNavigateToVoting={() => setCurrentRoute('VOTING')}
         onNavigateToPublicResults={() => setCurrentRoute('PUBLIC_RESULTS')}
+        onNavigateToManual={() => setCurrentRoute('MANUAL')}
       />
     );
   }
 
   if (currentRoute === 'PUBLIC_RESULTS') {
+    if (!user) {
+      return (
+        <LoginPage
+          onSuccess={() => setCurrentRoute('PUBLIC_RESULTS')}
+          onCancel={() => setCurrentRoute('VOTING')}
+        />
+      );
+    }
     return (
       <PublicResultsPage
-        onBack={() => setCurrentRoute('VOTING')}
+        onBack={() => setCurrentRoute('DASHBOARD')}
       />
+    );
+  }
+
+  if (currentRoute === 'MANUAL') {
+    return (
+      <ManualPage onBack={() => setCurrentRoute('DASHBOARD')} />
     );
   }
 

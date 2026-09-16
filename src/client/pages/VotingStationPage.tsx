@@ -390,18 +390,6 @@ export function VotingStationPage({
             </div>
           )}
 
-          {/* Enlace Directo a Proyección de Resultados en Vivo */}
-          {onNavigateToPublicResults && (
-            <button
-              onClick={onNavigateToPublicResults}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 active:scale-95 text-white transition-all text-xs font-black flex items-center gap-1.5 shadow-md hover:shadow-sky-500/20 cursor-pointer"
-              title="Ver Proyección de Resultados en Vivo"
-            >
-              <BarChart3 className="w-4 h-4" />
-              <span className="inline">Resultados en Vivo</span>
-            </button>
-          )}
-
           {/* Conmutador Modo Claro / Modo Oscuro */}
           <button
             onClick={toggleTheme}

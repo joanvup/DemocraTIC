@@ -66,10 +66,12 @@ type AdminTab = 'DASHBOARD' | 'ELECTIONS' | 'CANDIDATES' | 'STUDENTS' | 'IMPORT'
 
 export function DashboardPage({
   onNavigateToVoting,
-  onNavigateToPublicResults
+  onNavigateToPublicResults,
+  onNavigateToManual
 }: {
   onNavigateToVoting: () => void;
   onNavigateToPublicResults: () => void;
+  onNavigateToManual: () => void;
 }) {
   const { user, logout } = useAuth();
 
@@ -563,6 +565,14 @@ export function DashboardPage({
           >
             <Vote className="w-4 h-4" />
             <span className="hidden sm:inline">Estación de Votación</span>
+          </button>
+
+          <button
+            onClick={onNavigateToManual}
+            className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+          >
+            <ExternalLink className="w-4 h-4" />
+            <span className="hidden sm:inline">Manual PDF</span>
           </button>
 
           <button

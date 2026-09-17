@@ -8,9 +8,11 @@ const router = Router();
  * Canal SSE para transmitir actualizaciones en vivo del escrutinio y participación
  */
 router.get('/events', (req, res) => {
+  // Configuración de cabeceras optimizadas para LiteSpeed / Nginx / Hostinger
   res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Desactiva el buffering de Nginx/LiteSpeed en Hostinger
   res.flushHeaders?.();
 
   // Enviar mensaje de bienvenida / handshake
@@ -24,12 +26,19 @@ router.get('/events', (req, res) => {
       res.write(': ping\n\n');
     } catch {
       clearInterval(keepAliveInterval);
+      sseBroadcast.removeClient(res);
     }
   }, 25000);
 
-  req.on('close', () => {
+  const cleanup = () => {
     clearInterval(keepAliveInterval);
-  });
+    sseBroadcast.removeClient(res);
+  };
+
+  req.on('close', cleanup);
+  req.on('end', cleanup);
+  res.on('finish', cleanup);
+  res.on('close', cleanup);
 });
 
 export default router;

@@ -11,6 +11,10 @@ class SseBroadcastService {
     });
   }
 
+  removeClient(res: Response): void {
+    this.clients.delete(res);
+  }
+
   broadcast(eventType: string, data: unknown): void {
     const payload = `event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`;
     for (const client of this.clients) {

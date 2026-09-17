@@ -1,3 +1,4 @@
+import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import express from 'express';
 import path from 'path';
@@ -10,6 +11,16 @@ import votingRoutes from './src/server/routes/votingRoutes.js';
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
+
+  // Compresión Gzip/Deflate (excepto para streams SSE)
+  app.use(compression({
+    filter: (req, res) => {
+      if (req.path.includes('/events') || req.headers['accept']?.includes('text/event-stream')) {
+        return false;
+      }
+      return compression.filter(req, res);
+    }
+  }));
 
   // Middlewares estándar
   app.use(express.json({ limit: '25mb' }));
@@ -24,10 +35,12 @@ async function startServer() {
     console.error('Error al inicializar la base de datos:', err);
   }
 
-  // Rutas de API
-  app.get('/api/health', (_req, res) => {
+  // Rutas de API Health
+  const healthHandler = (_req: express.Request, res: express.Response) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
-  });
+  };
+  app.get('/api/health', healthHandler);
+  app.get('/api/v1/health', healthHandler);
 
   app.use('/api/v1/voting', votingRoutes);
   app.use('/api/v1/admin', adminRoutes);
@@ -48,7 +61,11 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, {
+      maxAge: '7d',
+      etag: true,
+      lastModified: true
+    }));
     app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });

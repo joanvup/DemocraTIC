@@ -18,13 +18,20 @@ export interface QueryResult<T = Record<string, unknown>> {
 
 const isMysql = () => process.env.DATABASE_CLIENT === 'mysql';
 
+let isWritingSqlite = false;
+let pendingSqlitePersist = false;
+let persistTimeout: NodeJS.Timeout | null = null;
+
 export async function getMysqlConnection() {
   if (pool) return pool;
 
   const config: mysql.PoolOptions = {
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000,
+    connectTimeout: 10000
   };
 
   // Priorizar variables individuales para evitar errores de parseo de URL
@@ -73,27 +80,74 @@ export async function getSqliteConnection(): Promise<Database> {
       const backupPath = DB_FILE_PATH + '.corrupt.' + Date.now();
       fs.renameSync(DB_FILE_PATH, backupPath);
       sqliteDbInstance = new SQL.Database();
-      persistSqliteDatabase(sqliteDbInstance);
+      persistSqliteDatabase(sqliteDbInstance, true);
     }
   } else {
     sqliteDbInstance = new SQL.Database();
-    persistSqliteDatabase(sqliteDbInstance);
+    persistSqliteDatabase(sqliteDbInstance, true);
   }
 
   return sqliteDbInstance;
 }
 
-export function persistSqliteDatabase(db?: Database): void {
+/**
+ * Persistencia no bloqueante a disco para SQLite.
+ * Evita congelar el event loop en momentos de alta concurrencia de votación.
+ */
+export function persistSqliteDatabase(db?: Database, immediate = false): void {
   const targetDb = db || sqliteDbInstance;
   if (!targetDb) return;
-  try {
-    const data = targetDb.export();
-    const buffer = Buffer.from(data);
-    fs.writeFileSync(DB_FILE_PATH, buffer);
-  } catch (err) {
-    console.error('Error persisting SQLite database to disk:', err);
+
+  if (immediate) {
+    try {
+      const data = targetDb.export();
+      fs.writeFileSync(DB_FILE_PATH, Buffer.from(data));
+    } catch (err) {
+      console.error('Error persisting SQLite database immediately:', err);
+    }
+    return;
   }
+
+  pendingSqlitePersist = true;
+
+  if (persistTimeout) {
+    return;
+  }
+
+  persistTimeout = setTimeout(async () => {
+    persistTimeout = null;
+    if (!pendingSqlitePersist || isWritingSqlite || !sqliteDbInstance) return;
+
+    try {
+      isWritingSqlite = true;
+      pendingSqlitePersist = false;
+      const data = sqliteDbInstance.export();
+      const buffer = Buffer.from(data);
+      const tempPath = `${DB_FILE_PATH}.tmp`;
+      await fs.promises.writeFile(tempPath, buffer);
+      await fs.promises.rename(tempPath, DB_FILE_PATH);
+    } catch (err) {
+      console.error('Error asynchronously persisting SQLite database to disk:', err);
+    } finally {
+      isWritingSqlite = false;
+      if (pendingSqlitePersist) {
+        persistSqliteDatabase();
+      }
+    }
+  }, 100);
 }
+
+// Asegurar persistencia al cerrar el proceso
+process.on('beforeExit', () => {
+  if (sqliteDbInstance && pendingSqlitePersist) {
+    try {
+      const data = sqliteDbInstance.export();
+      fs.writeFileSync(DB_FILE_PATH, Buffer.from(data));
+    } catch {
+      // Ignorar al salir
+    }
+  }
+});
 
 export async function executeQuery<T = Record<string, unknown>>(
   sql: string,
